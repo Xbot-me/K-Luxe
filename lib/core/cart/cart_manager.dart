@@ -1,6 +1,9 @@
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter/foundation.dart';
 import '../../features/cart/repositories/cart_repository.dart';
 import '../../features/product/models/product_model.dart';
+
+final cartProvider = NotifierProvider<CartNotifier, List<CartItem>>(CartNotifier.new);
 
 class CartItem {
   final Product product;
@@ -18,6 +21,24 @@ class CartItem {
     this.selectedOptions = const {},
     this.cartKey,
   });
+
+  CartItem copyWith({
+    Product? product,
+    int? quantity,
+    int? colorIndex,
+    String? variantId,
+    Map<String, String>? selectedOptions,
+    String? cartKey,
+  }) {
+    return CartItem(
+      product: product ?? this.product,
+      quantity: quantity ?? this.quantity,
+      colorIndex: colorIndex ?? this.colorIndex,
+      variantId: variantId ?? this.variantId,
+      selectedOptions: selectedOptions ?? this.selectedOptions,
+      cartKey: cartKey ?? this.cartKey,
+    );
+  }
 
   double get unitPrice {
     if (variantId == null) return product.price;
@@ -41,38 +62,41 @@ class CartItem {
       s.isEmpty ? s : s[0].toUpperCase() + s.substring(1);
 }
 
-class CartManager {
-  CartManager._();
-
-  static final List<CartItem> _items = [];
-  static List<CartItem> get items => List.unmodifiable(_items);
-
-  // ── Reactive notifier — listen to this for live cart count updates ──────
-  // Usage: ValueListenableBuilder<int>(
-  //   valueListenable: CartManager.countNotifier,
-  //   builder: (ctx, count, _) => Text('$count'),
-  // )
-  static final ValueNotifier<int> countNotifier = ValueNotifier<int>(0);
-
-  static void _notifyCount() {
-    countNotifier.value = _items.fold(0, (sum, i) => sum + i.quantity);
+class CartNotifier extends Notifier<List<CartItem>> {
+  @override
+  List<CartItem> build() {
+    return [];
   }
 
-  static int get itemCount => countNotifier.value;
+  int get itemCount => state.fold(0, (sum, i) => sum + i.quantity);
+  double get subtotal => state.fold(0, (sum, item) => sum + item.totalPrice);
+  String? get cartToken => ref.read(cartRepositoryProvider).cartToken;
 
-  static double get subtotal =>
-      _items.fold(0, (sum, item) => sum + item.totalPrice);
+  Future<void> initCart() async {
+    try {
+      final repo = ref.read(cartRepositoryProvider);
+      await repo.initCart();
+      final bffItems = await repo.getCart();
+      state = bffItems.map((item) => CartItem(
+        product: item.toProduct(),
+        quantity: item.quantity,
+        variantId: item.variantId,
+        selectedOptions: item.selectedOptions,
+        cartKey: item.key,
+      )).toList();
+    } catch (e) {
+      debugPrint('Cart init failed: $e');
+    }
+  }
 
-  static String? get cartToken => CartRepository.instance.cartToken;
-
-  // ── Add ─────────────────────────────────────────────────────────────────
-  static Future<void> addProduct(
+  Future<void> addProduct(
     Product product, {
     int colorIndex = 0,
     String? variantId,
     Map<String, String> selectedOptions = const {},
   }) async {
-    final newKey = await CartRepository.instance.addItem(
+    final repo = ref.read(cartRepositoryProvider);
+    final newKey = await repo.addItem(
       productId: product.id,
       quantity: 1,
       variantId: variantId,
@@ -84,21 +108,21 @@ class CartManager {
       return;
     }
 
-    _items.add(CartItem(
-      product: product,
-      colorIndex: colorIndex,
-      variantId: variantId,
-      selectedOptions: selectedOptions,
-      cartKey: newKey,
-      quantity: 1,
-    ));
-
-    _notifyCount(); // ← triggers all ValueListenableBuilder listeners
+    state = [
+      ...state,
+      CartItem(
+        product: product,
+        colorIndex: colorIndex,
+        variantId: variantId,
+        selectedOptions: selectedOptions,
+        cartKey: newKey,
+        quantity: 1,
+      )
+    ];
   }
 
-  // ── Remove ───────────────────────────────────────────────────────────────
-  static Future<void> removeItem(String productId, {String? variantId}) async {
-    final item = _items.firstWhere(
+  Future<void> removeItem(String productId, {String? variantId}) async {
+    final item = state.firstWhere(
       (i) => i.product.id == productId && i.variantId == variantId,
       orElse: () => throw Exception('Item not found'),
     );
@@ -107,94 +131,47 @@ class CartManager {
       debugPrint('Cannot remove: cartKey is null.');
       return;
     }
-    _items.remove(item);
-    _notifyCount();
-    await CartRepository.instance.removeItem(key);
+
+    state = state.where((i) => i != item).toList();
+    await ref.read(cartRepositoryProvider).removeItem(key);
   }
 
-  // ── Update quantity ──────────────────────────────────────────────────────
-  static Future<void> updateQuantity(
+  Future<void> updateQuantity(
     String productId,
     int newQty, {
     String? variantId,
   }) async {
-    final index = _items.indexWhere(
+    final index = state.indexWhere(
       (i) => i.product.id == productId && i.variantId == variantId,
     );
     if (index < 0) return;
-    final item = _items[index];
+    final item = state[index];
     if (item.cartKey == null) return;
     if (newQty <= 0) {
       await removeItem(productId, variantId: variantId);
       return;
     }
-    item.quantity = newQty;
-    _notifyCount();
-    await CartRepository.instance.updateItem(
+    
+    // Update local state by copying
+    final updatedList = List<CartItem>.from(state);
+    updatedList[index] = item.copyWith(quantity: newQty);
+    state = updatedList;
+
+    await ref.read(cartRepositoryProvider).updateItem(
       productId: productId,
       quantity: newQty,
       cartKey: item.cartKey,
     );
   }
 
-  // ── Clear ────────────────────────────────────────────────────────────────
-  static void clear() {
-    _items.clear();
-    _notifyCount();
+  void clear() {
+    state = [];
     _syncClear();
   }
 
-  // ── Init from BFF on app start ───────────────────────────────────────────
-  static Future<void> init() async {
+  Future<void> _syncClear() async {
     try {
-      await CartRepository.instance.initCart();
-      final bffItems = await CartRepository.instance.getCart();
-      _items.clear();
-      for (final item in bffItems) {
-        _items.add(CartItem(
-          product: item.toProduct(),
-          quantity: item.quantity,
-          variantId: item.variantId,
-          selectedOptions: item.selectedOptions,
-          cartKey: item.key,
-        ));
-      }
-      _notifyCount();
-    } catch (e) {
-      debugPrint('Cart init failed: $e');
-    }
-  }
-
-  // ── Private BFF sync ─────────────────────────────────────────────────────
-  static Future<void> _syncRemove(String productId, {String? cartKey}) async {
-    try {
-      await CartRepository.instance.removeItem(productId);
-    } catch (e) {
-      debugPrint('Cart sync remove failed: $e');
-    }
-  }
-
-  static Future<void> _syncUpdate(
-    String productId,
-    int quantity, {
-    String? variantId,
-    String? cartKey,
-  }) async {
-    try {
-      await CartRepository.instance.updateItem(
-        productId: productId,
-        quantity: quantity,
-        variantId: variantId,
-        cartKey: cartKey,
-      );
-    } catch (e) {
-      debugPrint('Cart sync update failed: $e');
-    }
-  }
-
-  static Future<void> _syncClear() async {
-    try {
-      await CartRepository.instance.clearCart();
+      await ref.read(cartRepositoryProvider).clearCart();
     } catch (e) {
       debugPrint('Cart sync clear failed: $e');
     }

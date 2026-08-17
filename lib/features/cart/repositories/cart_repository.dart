@@ -1,11 +1,13 @@
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/network/api_client.dart';
 import '../../../core/network/api_endpoints.dart';
 import '../models/cart_item_model.dart';
 import 'package:flutter/foundation.dart';
 
+final cartRepositoryProvider = Provider((ref) => CartRepository());
+
 class CartRepository {
-  CartRepository._();
-  static final CartRepository instance = CartRepository._();
+  CartRepository();
 
   String? _cartToken; // stored once, sent with every request
   String? get cartToken => _cartToken;

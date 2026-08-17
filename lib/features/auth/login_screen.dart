@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/theme/app_colors.dart';
 import '../../shared/widgets/primary_button.dart';
 import 'signup_screen.dart';
@@ -7,14 +8,14 @@ import '../../core/cart/cart_manager.dart';
 import './repositories/auth_repository.dart';
 import '../../core/network/api_exception.dart';
 
-class LoginScreen extends StatefulWidget {
+class LoginScreen extends ConsumerStatefulWidget {
   const LoginScreen({super.key});
 
   @override
-  State<LoginScreen> createState() => _LoginScreenState();
+  ConsumerState<LoginScreen> createState() => _LoginScreenState();
 }
 
-class _LoginScreenState extends State<LoginScreen> {
+class _LoginScreenState extends ConsumerState<LoginScreen> {
   final _formKey = GlobalKey<FormState>();
 
   final _emailController = TextEditingController();
@@ -36,13 +37,13 @@ class _LoginScreenState extends State<LoginScreen> {
   setState(() => _isLoading = true);
 
   try {
-    await AuthRepository.instance.login(
+    await ref.read(authRepositoryProvider).login(
       email: _emailController.text.trim(),
       password: _passwordController.text,
     );
 
     // Load user's server-side cart after login
-    await CartManager.init();
+    await ref.read(cartProvider.notifier).initCart();
 
     if (!mounted) return;
     Navigator.pushReplacement(

@@ -7,6 +7,7 @@
 
 import 'dart:async';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_application_1/shared/widgets/alert.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 import '../../core/utils/alert_service.dart';
@@ -23,13 +24,13 @@ import 'store/recently_viewed_store.dart';
 
 // Widgets
 import 'widgets/hero_banner.dart';
-import 'widgets/search_bar.dart';
+import '../../shared/widgets/shared_search_bar.dart';
 import 'widgets/flash_sale_countdown.dart';
 import 'widgets/category_filter_bar.dart';
 import 'widgets/section_header.dart';
 import 'widgets/cinematic_card.dart';
 import 'widgets/featured_artist_banner.dart';
-import 'widgets/premium_product_card.dart';
+import '../../shared/widgets/shared_product_card.dart';
 import 'widgets/best_sellers_grid.dart';
 import 'widgets/recently_viewed_card.dart';
 import 'widgets/search_result_tile.dart';
@@ -45,14 +46,14 @@ export 'store/recently_viewed_store.dart';
 
 
 
-class HomeScreen extends StatefulWidget {
+class HomeScreen extends ConsumerStatefulWidget {
   const HomeScreen({super.key});
 
   @override
-  State<HomeScreen> createState() => _HomeScreenState();
+  ConsumerState<HomeScreen> createState() => _HomeScreenState();
 }
 
-class _HomeScreenState extends State<HomeScreen> {
+class _HomeScreenState extends ConsumerState<HomeScreen> {
   // ── NEW: key to open the drawer programmatically ──
   final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
 
@@ -88,7 +89,7 @@ class _HomeScreenState extends State<HomeScreen> {
   // ── Data loading ──────────────────────────────────────────────────────────
   Future<void> _loadCategories() async {
     try {
-      final cats = await ProductRepository.instance.getCategories();
+      final cats = await ref.read(productRepositoryProvider).getCategories();
       if (mounted) setState(() => _categories = ['ALL', ...cats]);
     } catch (_) {}
   }
@@ -96,7 +97,7 @@ class _HomeScreenState extends State<HomeScreen> {
   Future<void> _loadProducts({String? category}) async {
     setState(() { _isLoading = true; _error = null; });
     try {
-      final products = await ProductRepository.instance.getProducts(
+      final products = await ref.read(productRepositoryProvider).getProducts(
         category: category == 'ALL' ? null : category,
       );
       if (mounted) setState(() => _products = products.products);
@@ -124,7 +125,7 @@ class _HomeScreenState extends State<HomeScreen> {
     setState(() => _searchLoading = true);
     _searchDebounce = Timer(const Duration(milliseconds: 400), () async {
       try {
-        final results = await ProductRepository.instance.searchProducts(query.trim());
+        final results = await ref.read(productRepositoryProvider).searchProducts(query.trim());
         if (mounted) setState(() => _searchResults = results.products);
       } catch (_) {
         if (mounted) setState(() => _searchResults = []);
@@ -269,21 +270,17 @@ class _HomeScreenState extends State<HomeScreen> {
                   clipBehavior: Clip.none,
                   children: [
                     const Icon(LucideIcons.bell, size: 24, color: AppColors.onBackground),
-                    ListenableBuilder(
-                      listenable: NotificationStore.instance,
-                      builder: (_, __) => NotificationStore.instance.hasUnread
-                        ? Positioned(
-                            top: 0, right: 2,
-                            child: Container(
-                              width: 8, height: 8,
-                              decoration: BoxDecoration(
-                                color: AppColors.primary,
-                                shape: BoxShape.circle,
-                              ),
-                            ),
-                          )
-                        : const SizedBox.shrink(),
-                    ),
+                    if (ref.watch(notificationProvider).any((n) => !n.isRead))
+                      Positioned(
+                        top: 0, right: 2,
+                        child: Container(
+                          width: 8, height: 8,
+                          decoration: const BoxDecoration(
+                            color: AppColors.primary,
+                            shape: BoxShape.circle,
+                          ),
+                        ),
+                      ),
                   ],
                 ),
               ),
@@ -308,10 +305,12 @@ class _HomeScreenState extends State<HomeScreen> {
         children: [
           HeroBanner(onShopTap: () => _onTabChanged(2)),
           const SizedBox(height: 20),
-          HomeSearchBar(
+          SharedSearchBar(
             controller: _searchController,
             onChanged: _onSearchChanged,
             onFocus: (active) => setState(() => _searchActive = active),
+            padding: const EdgeInsets.symmetric(horizontal: 24),
+            hintText: 'Search albums, merch, artists...',
           ),
           const SizedBox(height: 20),
           const FlashSaleCountdown(),
@@ -349,7 +348,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 physics: const BouncingScrollPhysics(),
                 padding: const EdgeInsets.symmetric(horizontal: 24),
                 itemCount: newReleases.length,
-                itemBuilder: (_, i) => PremiumProductCard(product: newReleases[i]),
+                itemBuilder: (_, i) => SharedProductCard(product: newReleases[i], variant: ProductCardVariant.horizontal),
               ),
             ),
             const SizedBox(height: 48),
@@ -386,11 +385,13 @@ class _HomeScreenState extends State<HomeScreen> {
         children: [
           Padding(
             padding: const EdgeInsets.fromLTRB(24, 8, 24, 0),
-            child: HomeSearchBar(
+            child: SharedSearchBar(
               controller: _searchController,
               onChanged: _onSearchChanged,
               onFocus: (active) => setState(() => _searchActive = active),
               autofocus: true,
+              padding: EdgeInsets.zero,
+              hintText: 'Search albums, merch, artists...',
             ),
           ),
           const SizedBox(height: 12),

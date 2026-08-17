@@ -2,20 +2,21 @@ import 'package:flutter/material.dart';
 import 'package:flutter_application_1/features/checkout/models/shipping_rate.dart';
 import 'package:flutter_application_1/features/checkout/services/shipping_service.dart';
 import 'package:go_router/go_router.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/cart/cart_manager.dart';
 import '../../shared/widgets/glass_container.dart';
 
-class CartScreen extends StatefulWidget {
+class CartScreen extends ConsumerStatefulWidget {
   const CartScreen({super.key});
 
   @override
-  State<CartScreen> createState() => _CartScreenState();
+  ConsumerState<CartScreen> createState() => _CartScreenState();
 }
 
-class _CartScreenState extends State<CartScreen>
+class _CartScreenState extends ConsumerState<CartScreen>
     with AutomaticKeepAliveClientMixin {
   final _couponController = TextEditingController();
 
@@ -39,9 +40,9 @@ class _CartScreenState extends State<CartScreen>
     super.dispose();
   }
 
-  void _refresh() => setState(() {});
+  void _refresh() {} // Replaced by Riverpod
 
-  double get subtotal => CartManager.subtotal;
+  double get subtotal => ref.watch(cartProvider).fold(0.0, (sum, i) => sum + i.totalPrice);
   double get shippingCost => _selectedRate?.price ?? 0;
   double get total => subtotal + shippingCost;
 
@@ -50,7 +51,7 @@ class _CartScreenState extends State<CartScreen>
     try {
       final rates = await ShippingService().getRates(
         addressId: _mockAddressId,
-        cartToken: CartManager.cartToken!,
+        cartToken: ref.read(cartProvider.notifier).cartToken!,
       );
       setState(() {
         _availableRates = rates;
@@ -78,7 +79,7 @@ class _CartScreenState extends State<CartScreen>
     try {
       await ShippingService().selectRate(
         rateId: rate.id,
-        cartToken: CartManager.cartToken!,
+        cartToken: ref.read(cartProvider.notifier).cartToken!,
       );
       setState(() => _selectedRate = rate);
     } catch (e) {
@@ -99,7 +100,7 @@ class _CartScreenState extends State<CartScreen>
   @override
   Widget build(BuildContext context) {
     super.build(context);
-    final items = CartManager.items;
+    final items = ref.watch(cartProvider);
 
     return Scaffold(
       backgroundColor: AppColors.background,
@@ -133,9 +134,8 @@ class _CartScreenState extends State<CartScreen>
                     ),
                     TextButton(
                       onPressed: () {
-                        CartManager.clear();
+                        ref.read(cartProvider.notifier).clear();
                         Navigator.pop(context);
-                        _refresh();
                       },
                       child: const Text(
                         'Clear',
@@ -160,7 +160,7 @@ class _CartScreenState extends State<CartScreen>
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    '${CartManager.itemCount} items securely held.',
+                    '${items.fold(0, (sum, i) => sum + i.quantity as int)} items securely held.',
                     style: Theme.of(context).textTheme.bodyMedium,
                   ),
                   const SizedBox(height: 32),
@@ -403,14 +403,14 @@ class _CartScreenState extends State<CartScreen>
 }
 
 // --- Cart item tile (unchanged, but included for completeness) ---
-class _CartItemTile extends StatelessWidget {
+class _CartItemTile extends ConsumerWidget {
   final CartItem item;
   final VoidCallback onChanged;
 
   const _CartItemTile({required this.item, required this.onChanged});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     return Dismissible(
       key: Key('${item.product.id}_${item.variantId ?? 'simple'}'),
       direction: DismissDirection.endToStart,
@@ -426,8 +426,7 @@ class _CartItemTile extends StatelessWidget {
         child: const Icon(LucideIcons.trash2, color: AppColors.error, size: 22),
       ),
       onDismissed: (_) {
-        CartManager.removeItem(item.product.id, variantId: item.variantId);
-        onChanged();
+        ref.read(cartProvider.notifier).removeItem(item.product.id, variantId: item.variantId);
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('${item.product.name} removed'),
@@ -484,11 +483,10 @@ class _CartItemTile extends StatelessWidget {
                       ),
                       GestureDetector(
                         onTap: () {
-                          CartManager.removeItem(
+                          ref.read(cartProvider.notifier).removeItem(
                             item.product.id,
                             variantId: item.variantId,
                           );
-                          onChanged();
                         },
                         child: const Icon(
                           LucideIcons.x,
@@ -535,12 +533,11 @@ class _CartItemTile extends StatelessWidget {
                           children: [
                             GestureDetector(
                               onTap: () {
-                                CartManager.updateQuantity(
+                                ref.read(cartProvider.notifier).updateQuantity(
                                   item.product.id,
                                   item.quantity - 1,
                                   variantId: item.variantId,
                                 );
-                                onChanged();
                               },
                               child: Icon(
                                 item.quantity == 1
@@ -562,12 +559,11 @@ class _CartItemTile extends StatelessWidget {
                             const SizedBox(width: 16),
                             GestureDetector(
                               onTap: () {
-                                CartManager.updateQuantity(
+                                ref.read(cartProvider.notifier).updateQuantity(
                                   item.product.id,
                                   item.quantity + 1,
                                   variantId: item.variantId,
                                 );
-                                onChanged();
                               },
                               child: const Icon(LucideIcons.plus, size: 14),
                             ),

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 
@@ -7,20 +8,19 @@ import '../../features/auth/repositories/auth_repository.dart';
 import '../auth/login_screen.dart';
 import '../order/order_history_screen.dart';
 import '../../shared/widgets/glass_container.dart';
+import '../auth/models/user_model.dart';
 
-class ProfileScreen extends StatefulWidget {
+class ProfileScreen extends ConsumerStatefulWidget {
   const ProfileScreen({super.key});
 
   @override
-  State<ProfileScreen> createState() => _ProfileScreenState();
+  ConsumerState<ProfileScreen> createState() => _ProfileScreenState();
 }
 
-class _ProfileScreenState extends State<ProfileScreen>
+class _ProfileScreenState extends ConsumerState<ProfileScreen>
     with AutomaticKeepAliveClientMixin {
   // ── Live user from AuthRepository ──
-  // Auth state is already in memory — no async fetch needed unless
-  // you want to refresh from the server on every open (not needed here).
-  late final _user = AuthRepository.instance.currentUser;
+  User? get _user => ref.read(authRepositoryProvider).currentUser;
 
   // ── Mock data ──
   final int _orderCount = 7;
@@ -87,7 +87,7 @@ class _ProfileScreenState extends State<ProfileScreen>
 
     if (confirmed != true || !mounted) return;
 
-    await AuthRepository.instance.logout();
+    await ref.read(authRepositoryProvider).logout();
 
     if (!mounted) return;
     Navigator.pushAndRemoveUntil(

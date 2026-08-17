@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 
@@ -18,14 +19,14 @@ import 'payment/hosted_payment_screen.dart';
 
 enum PaymentMethod { card, bkash, cod }
 
-class CheckoutScreen extends StatefulWidget {
+class CheckoutScreen extends ConsumerStatefulWidget {
   const CheckoutScreen({super.key});
 
   @override
-  State<CheckoutScreen> createState() => _CheckoutScreenState();
+  ConsumerState<CheckoutScreen> createState() => _CheckoutScreenState();
 }
 
-class _CheckoutScreenState extends State<CheckoutScreen> {
+class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
   final _shippingService = ShippingService();
 
   // Address State
@@ -43,7 +44,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
   bool _isPlacingOrder = false;
 
   // Dynamic Totals
-  double get subtotal => CartManager.subtotal;
+  double get subtotal => ref.watch(cartProvider).fold(0.0, (sum, i) => sum + i.totalPrice);
   double get shippingCost => _selectedRate?.price ?? 0;
   double get total => subtotal + shippingCost;
 
@@ -72,7 +73,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
     try {
       final rates = await _shippingService.getRates(
         addressId: addressId,
-        cartToken: CartManager.cartToken!,
+        cartToken: ref.read(cartProvider.notifier).cartToken!,
       );
       if (!mounted) return;
       setState(() => _availableRates = rates);
@@ -97,7 +98,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
     try {
       final confirmedRate = await _shippingService.selectRate(
         rateId: rate.id,
-        cartToken: CartManager.cartToken!,
+        cartToken: ref.read(cartProvider.notifier).cartToken!,
       );
       if (mounted) setState(() => _selectedRate = confirmedRate);
     } on ApiException catch (e) {
@@ -189,7 +190,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
     try {
       // ── COD / bKash (normal BFF flow) ──
       if (_selectedPayment != PaymentMethod.card) {
-        final orderId = await OrderRepository.instance.placeOrder(
+        final orderId = await ref.read(orderRepositoryProvider).placeOrder(
           addressId: _selectedAddressId,
           paymentMethod: _selectedPayment.name,
         );
@@ -281,7 +282,7 @@ if (status == 'processing' || status == 'pending') {
   }
 
   void _handleSuccessfulOrder(String orderId) {
-    CartManager.clear();
+    ref.read(cartProvider.notifier).clear();
     Navigator.pushAndRemoveUntil(
       context,
       MaterialPageRoute(builder: (_) => OrderConfirmScreen(orderId: orderId)),
@@ -540,7 +541,7 @@ if (status == 'processing' || status == 'pending') {
       padding: const EdgeInsets.all(24),
       child: Column(
         children: [
-          ...CartManager.items.map(
+          ...ref.watch(cartProvider).map(
             (item) => Padding(
               padding: const EdgeInsets.only(bottom: 16),
               child: Row(

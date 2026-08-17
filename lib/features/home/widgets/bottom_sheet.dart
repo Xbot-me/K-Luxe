@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_application_1/core/utils/alert_service.dart';
 import 'package:flutter_application_1/shared/widgets/alert.dart';
 import '../../../core/theme/app_colors.dart';
@@ -7,7 +8,7 @@ import '../../../shared/widgets/glass_container.dart';
 import '../../../core/cart/cart_manager.dart';
 import '../../product/repositories/product_repository.dart';
 
-class QuickAddBottomSheet extends StatefulWidget {
+class QuickAddBottomSheet extends ConsumerStatefulWidget {
   final Product product; // minimal product from list (no options/variants)
 
   const QuickAddBottomSheet({super.key, required this.product});
@@ -22,10 +23,10 @@ class QuickAddBottomSheet extends StatefulWidget {
   }
 
   @override
-  State<QuickAddBottomSheet> createState() => _QuickAddBottomSheetState();
+  ConsumerState<QuickAddBottomSheet> createState() => _QuickAddBottomSheetState();
 }
 
-class _QuickAddBottomSheetState extends State<QuickAddBottomSheet> {
+class _QuickAddBottomSheetState extends ConsumerState<QuickAddBottomSheet> {
   Product? _fullProduct;
   bool _isLoading = true;
   bool _isAdding = false;
@@ -39,7 +40,7 @@ class _QuickAddBottomSheetState extends State<QuickAddBottomSheet> {
 
   Future<void> _loadFullProduct() async {
     try {
-      final product = await ProductRepository.instance.getProduct(
+      final product = await ref.read(productRepositoryProvider).getProduct(
         widget.product.id,
       );
       setState(() {
@@ -284,9 +285,9 @@ class _QuickAddBottomSheetState extends State<QuickAddBottomSheet> {
                           final navigator = Navigator.of(context);
                           //final messenger = ScaffoldMessenger.of(context);
                           setState(() => _isAdding = true);
-                          await CartManager.addProduct(
+                          await ref.read(cartProvider.notifier).addProduct(
                             product,
-                            variantId: selectedVariant.id,
+                            variantId: selectedVariant?.id,
                             selectedOptions: _selectedOptions,
                           );
                           if (mounted) {

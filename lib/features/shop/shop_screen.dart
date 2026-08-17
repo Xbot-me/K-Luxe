@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_application_1/shared/widgets/alert.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 import '../../core/utils/alert_service.dart';
@@ -9,24 +10,24 @@ import '../../features/product/repositories/product_repository.dart';
 import '../product/models/product_model.dart';
 import '../../core/cart/cart_manager.dart';
 import 'models/shop_filter_state.dart';
-import 'widgets/shop_search_bar.dart';
+import '../../shared/widgets/shared_search_bar.dart';
 import 'widgets/shop_promo_banner.dart';
 import 'widgets/filter_bottom_sheet.dart';
 import 'widgets/active_filter_chips.dart';
-import 'widgets/shop_product_card.dart';
+import '../../shared/widgets/shared_product_card.dart';
 import 'widgets/shop_skeleton.dart';
 
-class ShopScreen extends StatefulWidget {
+class ShopScreen extends ConsumerStatefulWidget {
   /// Optional: pre-select a category when navigating from home (e.g. /shop?category=albums)
   final String? initialCategory;
 
   const ShopScreen({super.key, this.initialCategory});
 
   @override
-  State<ShopScreen> createState() => _ShopScreenState();
+  ConsumerState<ShopScreen> createState() => _ShopScreenState();
 }
 
-class _ShopScreenState extends State<ShopScreen>
+class _ShopScreenState extends ConsumerState<ShopScreen>
     with AutomaticKeepAliveClientMixin {
   // ── Data ────────────────────────────────────────────────────────────────────
   List<Product> _products = [];
@@ -75,7 +76,7 @@ class _ShopScreenState extends State<ShopScreen>
   // ── Data loading ─────────────────────────────────────────────────────────
   Future<void> _loadCategories() async {
     try {
-      final cats = await ProductRepository.instance.getCategories();
+      final cats = await ref.read(productRepositoryProvider).getCategories();
       if (mounted) setState(() => _categories = ['ALL', ...cats]);
     } catch (_) {}
   }
@@ -92,7 +93,7 @@ class _ShopScreenState extends State<ShopScreen>
     }
 
     try {
-      final result = await ProductRepository.instance.getProducts(
+      final result = await ref.read(productRepositoryProvider).getProducts(
         category: _filters.category == 'ALL' ? null : _filters.category,
         orderby: _filters.sort.apiValue,
         minPrice: _filters.minPrice > 0 ? _filters.minPrice : null,
@@ -183,10 +184,11 @@ class _ShopScreenState extends State<ShopScreen>
             const SizedBox(height: 12),
 
             // ── Search + filter ──────────────────────────────────────────
-            ShopSearchBar(
+            SharedSearchBar(
               controller: _searchController,
               onChanged: _onSearchChanged,
               hasActiveFilters: _filters.hasActiveFilters,
+              hintText: 'Search products...',
               onFilterTap: () => FilterBottomSheet.show(
                 context,
                 initial: _filters,
@@ -259,7 +261,7 @@ class _ShopScreenState extends State<ShopScreen>
                               ),
                             );
                           }
-                          return ShopProductCard(product: _products[i]);
+                          return SharedProductCard(product: _products[i], variant: ProductCardVariant.shopGrid);
                         },
                       ),
                     ),
@@ -299,46 +301,48 @@ class _ShopScreenState extends State<ShopScreen>
             ),
           ),
           // Cart shortcut
-          ValueListenableBuilder<int>(
-            valueListenable: CartManager.countNotifier,
-            builder: (_, count, __) => Stack(
-              clipBehavior: Clip.none,
-              children: [
-                Container(
-                  width: 44,
-                  height: 44,
-                  decoration: BoxDecoration(
-                    color: AppColors.surface,
-                    borderRadius: BorderRadius.circular(12),
+          Consumer(
+            builder: (context, ref, _) {
+              final count = ref.watch(cartProvider).fold(0, (sum, i) => sum + i.quantity);
+              return Stack(
+                clipBehavior: Clip.none,
+                children: [
+                  Container(
+                    width: 44,
+                    height: 44,
+                    decoration: BoxDecoration(
+                      color: AppColors.surface,
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: const Icon(
+                      LucideIcons.shoppingBag,
+                      color: AppColors.onBackground,
+                      size: 20,
+                    ),
                   ),
-                  child: const Icon(
-                    LucideIcons.shoppingBag,
-                    color: AppColors.onBackground,
-                    size: 20,
-                  ),
-                ),
-                if (count > 0)
-                  Positioned(
-                    top: -4,
-                    right: -4,
-                    child: Container(
-                      padding: const EdgeInsets.all(4),
-                      decoration: const BoxDecoration(
-                        color: AppColors.error,
-                        shape: BoxShape.circle,
-                      ),
-                      child: Text(
-                        '$count',
-                        style: const TextStyle(
-                          color: Colors.white,
-                          fontSize: 9,
-                          fontWeight: FontWeight.bold,
+                  if (count > 0)
+                    Positioned(
+                      top: -4,
+                      right: -4,
+                      child: Container(
+                        padding: const EdgeInsets.all(4),
+                        decoration: const BoxDecoration(
+                          color: AppColors.error,
+                          shape: BoxShape.circle,
+                        ),
+                        child: Text(
+                          '$count',
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 9,
+                            fontWeight: FontWeight.bold,
+                          ),
                         ),
                       ),
                     ),
-                  ),
-              ],
-            ),
+                ],
+              );
+            },
           ),
         ],
       ),

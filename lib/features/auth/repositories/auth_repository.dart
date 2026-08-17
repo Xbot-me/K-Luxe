@@ -1,11 +1,13 @@
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/network/api_client.dart';
 import '../../../core/network/api_endpoints.dart';
 import '../../../core/storage/token_storage.dart';
 import '../models/user_model.dart';
 
+final authRepositoryProvider = Provider((ref) => AuthRepository());
+
 class AuthRepository {
-  AuthRepository._();
-  static final AuthRepository instance = AuthRepository._();
+  AuthRepository();
 
   // Holds the logged-in user in memory for the session
   User? _currentUser;

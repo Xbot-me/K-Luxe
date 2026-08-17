@@ -1,7 +1,9 @@
+import 'package:flutter_dotenv/flutter_dotenv.dart';
+
 class ApiEndpoints {
   ApiEndpoints._();
 
-  static const String baseUrl = 'http://192.168.47.182:3000/api';
+  static String get baseUrl => dotenv.env['API_BASE_URL'] ?? 'http://192.168.47.182:3000/api';
 
   // ── Auth ──
   static String get login => '$baseUrl/auth/login';

@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>repo-brain Architecture Graph</title>
+    <script src="https://d3js.org/d3.v7.min.js"></script>
+    <style>
+        body { margin: 0; background: #0f172a; color: #f8fafc; font-family: system-ui, sans-serif; overflow: hidden; }
+        #header { position: absolute; top: 16px; left: 16px; z-index: 10; background: rgba(30,41,59,0.85); backdrop-filter: blur(8px); padding: 16px; border-radius: 12px; border: 1px solid #334155; max-width: 320px; }
+        h1 { font-size: 1.1rem; margin: 0 0 8px 0; color: #38bdf8; }
+        p { font-size: 0.85rem; color: #94a3b8; margin: 0 0 12px 0; }
+        input { width: 100%; padding: 8px 12px; border-radius: 6px; border: 1px solid #475569; background: #0f172a; color: #fff; box-sizing: border-box; }
+        .node circle { stroke: #38bdf8; stroke-width: 1.5px; transition: all 0.2s; }
+        .node text { font-size: 10px; fill: #cbd5e1; pointer-events: none; }
+        .link { stroke: #475569; stroke-opacity: 0.6; stroke-width: 1px; marker-end: url(#arrow); }
+        #tooltip { position: absolute; display: none; background: #1e293b; color: #f8fafc; padding: 10px; border-radius: 6px; border: 1px solid #475569; font-size: 12px; z-index: 20; pointer-events: none; }
+    </style>
+</head>
+<body>
+    <div id="header">
+        <h1>🧠 repo-brain Dependency Graph</h1>
+        <p>Node size represents PageRank structural importance.</p>
+        <input type="text" id="search" placeholder="Filter files (e.g. scanner, auth)..." onkeyup="filterNodes()">
+    </div>
+    <div id="tooltip"></div>
+    <svg id="canvas" width="100%" height="100vh"></svg>
+
+    <script>
+        const nodes = [];
+        const links = [];
+
+        const width = window.innerWidth;
+        const height = window.innerHeight;
+
+        const svg = d3.select("#canvas");
+        const g = svg.append("g");
+
+        svg.call(d3.zoom().scaleExtent([0.1, 8]).on("zoom", (event) => g.attr("transform", event.transform)));
+
+        svg.append("defs").append("marker")
+            .attr("id", "arrow").attr("viewBox", "0 -5 10 10").attr("refX", 18).attr("refY", 0)
+            .attr("markerWidth", 6).attr("markerHeight", 6).attr("orient", "auto")
+            .append("path").attr("d", "M0,-5L10,0L0,5").attr("fill", "#475569");
+
+        const maxScore = d3.max(nodes, d => d.score) || 1;
+        const radiusScale = d3.scaleSqrt().domain([0, maxScore]).range([6, 24]);
+
+        const simulation = d3.forceSimulation(nodes)
+            .force("link", d3.forceLink(links).id(d => d.id).distance(90))
+            .force("charge", d3.forceManyBody().strength(-250))
+            .force("center", d3.forceCenter(width / 2, height / 2));
+
+        const link = g.append("g").selectAll(".link")
+            .data(links).enter().append("line").attr("class", "link");
+
+        const node = g.append("g").selectAll(".node")
+            .data(nodes).enter().append("g").attr("class", "node")
+            .call(d3.drag().on("start", dragstarted).on("drag", dragged).on("end", dragended));
+
+        node.append("circle")
+            .attr("r", d => radiusScale(d.score))
+            .attr("fill", d => d.lang === 'python' ? '#38bdf8' : (d.lang === 'ts' || d.lang === 'js' ? '#f59e0b' : '#34d399'));
+
+        node.append("text").attr("dx", 14).attr("dy", ".35em").text(d => d.label);
+
+        const tooltip = d3.select("#tooltip");
+        node.on("mouseover", (event, d) => {
+            tooltip.style("display", "block")
+                .html(`<strong>${d.label}</strong><br>Lang: ${d.lang}<br>PageRank: ${d.score.toFixed(5)}<br>LOC: ${d.loc}<br>Tokens: ${d.tokens}`);
+        }).on("mousemove", (event) => {
+            tooltip.style("left", (event.pageX + 12) + "px").style("top", (event.pageY + 12) + "px");
+        }).on("mouseout", () => tooltip.style("display", "none"));
+
+        simulation.on("tick", () => {
+            link.attr("x1", d => d.source.x).attr("y1", d => d.source.y)
+                .attr("x2", d => d.target.x).attr("y2", d => d.target.y);
+            node.attr("transform", d => `translate(${d.x},${d.y})`);
+        });
+
+        function dragstarted(event, d) { if (!event.active) simulation.alphaTarget(0.3).restart(); d.fx = d.x; d.fy = d.y; }
+        function dragged(event, d) { d.fx = event.x; d.fy = event.y; }
+        function dragended(event, d) { if (!event.active) simulation.alphaTarget(0); d.fx = null; d.fy = null; }
+
+        function filterNodes() {
+            const query = document.getElementById("search").value.toLowerCase();
+            node.style("opacity", d => d.label.toLowerCase().includes(query) ? 1 : 0.15);
+        }
+    </script>
+</body>
+</html>

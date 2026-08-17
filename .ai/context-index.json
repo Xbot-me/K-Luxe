@@ -1,0 +1,27 @@
+{
+  "schema_version": 2,
+  "generated_at": "2026-08-17T15:17:36Z",
+  "git_head": "ba7190c60d4d031a4624c319f6a0f366d28241d7",
+  "token_estimate_method": "chars_per_token_v1",
+  "token_estimate_params": {
+    "python": 3.0,
+    "js": 3.0,
+    "ts": 3.0,
+    "php": 3.0,
+    "go": 3.0,
+    "bash": 3.5,
+    "sql": 3.5,
+    "default": 3.2
+  },
+  "repo_snapshot": {
+    "file_count": 0,
+    "total_bytes": 0,
+    "total_tokens": 0
+  },
+  "scan_fingerprint": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+  "stack": [],
+  "file_count": 0,
+  "total_tokens": 0,
+  "top_50_tokens": 0,
+  "top_files": []
+}

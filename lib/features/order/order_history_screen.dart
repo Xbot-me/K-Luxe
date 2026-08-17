@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/theme/app_colors.dart';
 //import '../../core/constants/dummy_data.dart';
 import '../../shared/widgets/status_badge.dart';
@@ -6,14 +7,14 @@ import 'models/order_models.dart';
 import 'repositories/order_repository.dart';
 import '../../core/network/api_exception.dart';
 
-class OrderHistoryScreen extends StatefulWidget {
+class OrderHistoryScreen extends ConsumerStatefulWidget {
   const OrderHistoryScreen({super.key});
 
   @override
-  State<OrderHistoryScreen> createState() => _OrderHistoryScreenState();
+  ConsumerState<OrderHistoryScreen> createState() => _OrderHistoryScreenState();
 }
 
-class _OrderHistoryScreenState extends State<OrderHistoryScreen> {
+class _OrderHistoryScreenState extends ConsumerState<OrderHistoryScreen> {
   // Filter options shown as chips at the top
   OrderStatus? _selectedFilter;
   List<Order> _orders = [];
@@ -32,7 +33,7 @@ class _OrderHistoryScreenState extends State<OrderHistoryScreen> {
       _error = null;
     });
     try {
-      final orders = await OrderRepository.instance.getOrders();
+      final orders = await ref.read(orderRepositoryProvider).getOrders();
       if (mounted) setState(() => _orders = orders);
     } on ApiException catch (e) {
       if (mounted) setState(() => _error = e.message);

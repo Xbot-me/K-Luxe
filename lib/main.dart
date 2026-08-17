@@ -1,4 +1,7 @@
+import 'dart:ui';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:go_router/go_router.dart';
 import 'core/theme/app_theme.dart';
 import 'features/splash/splash_screen.dart';
@@ -12,12 +15,34 @@ import 'features/product/models/product_model.dart';
 import 'core/cart/cart_manager.dart';
 import 'features/product/widgets/product_detail_fetch_screen.dart';
 import 'features/shop/shop_screen.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 // main.dart
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  await CartManager.init();
-  runApp(const KLuxeApp());
+  
+  // Setup Global Error Handling
+  FlutterError.onError = (details) {
+    FlutterError.presentError(details);
+    if (kReleaseMode) {
+      // Send to crashlytics/sentry in production
+    }
+  };
+  PlatformDispatcher.instance.onError = (error, stack) {
+    if (kReleaseMode) {
+      // Send to crashlytics/sentry in production
+    }
+    return true;
+  };
+
+  await dotenv.load(fileName: ".env");
+
+  final container = ProviderContainer();
+  await container.read(cartProvider.notifier).initCart();
+  runApp(UncontrolledProviderScope(
+    container: container,
+    child: const KLuxeApp(),
+  ));
 }
 
 class KLuxeApp extends StatefulWidget {

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/cart/cart_manager.dart';
 import 'models/product_model.dart';
 import 'repositories/product_repository.dart';
@@ -8,15 +9,15 @@ import 'repositories/product_repository.dart';
 // Drop-in replacement for the old ProductDetailScreen.
 // Same constructor, same external API — only the UI is new.
 // ─────────────────────────────────────────────────────────────────────────────
-class ProductDetailScreen extends StatefulWidget {
+class ProductDetailScreen extends ConsumerStatefulWidget {
   final Product product;
   const ProductDetailScreen({super.key, required this.product});
 
   @override
-  State<ProductDetailScreen> createState() => _ProductDetailScreenState();
+  ConsumerState<ProductDetailScreen> createState() => _ProductDetailScreenState();
 }
 
-class _ProductDetailScreenState extends State<ProductDetailScreen>
+class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen>
     with SingleTickerProviderStateMixin {
   // ── Full product loaded from single-product endpoint ──────────────────────
   // The list API omits variants/attributes — we fetch the full object here,
@@ -54,7 +55,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen>
 
   Future<void> _loadFullProduct() async {
     try {
-      final full = await ProductRepository.instance.getProduct(
+      final full = await ref.read(productRepositoryProvider).getProduct(
         widget.product.id,
       );
       if (!mounted) return;
@@ -125,7 +126,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen>
       return;
     }
     for (int i = 0; i < _quantity; i++) {
-      CartManager.addProduct(
+      ref.read(cartProvider.notifier).addProduct(
         _product,
         variantId: _selectedVariant?.id,
         selectedOptions: _selectedOptions,

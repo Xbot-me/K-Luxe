@@ -1,10 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 import '../../../core/cart/cart_manager.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../shared/widgets/glass_container.dart';
 
-class HomeBottomNav extends StatelessWidget {
+class HomeBottomNav extends ConsumerWidget {
   final int currentTab;
   final ValueChanged<int> onTabChanged;
   final VoidCallback onSearchTap;
@@ -17,11 +18,9 @@ class HomeBottomNav extends StatelessWidget {
   });
 
   @override
-  Widget build(BuildContext context) {
-    return ValueListenableBuilder<int>(
-      valueListenable: CartManager.countNotifier,
-      builder: (context, cartCount, _) {
-        return GlassContainer(
+  Widget build(BuildContext context, WidgetRef ref) {
+    final cartCount = ref.watch(cartProvider).fold(0, (sum, i) => sum + i.quantity);
+    return GlassContainer(
           height: 80,
           blur: 25,
           borderRadius: 40,
@@ -68,8 +67,6 @@ class HomeBottomNav extends StatelessWidget {
             ],
           ),
         );
-      },
-    );
   }
 }
 

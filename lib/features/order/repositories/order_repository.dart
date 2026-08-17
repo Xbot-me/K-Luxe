@@ -1,11 +1,13 @@
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/network/api_client.dart';
 import '../../../core/network/api_endpoints.dart';
 import '../models/order_models.dart';
 import '../../product/models/product_model.dart';
 
+final orderRepositoryProvider = Provider((ref) => OrderRepository());
+
 class OrderRepository {
-  OrderRepository._();
-  static final OrderRepository instance = OrderRepository._();
+  OrderRepository();
 
   // ── Place a new order ──
  Future<String> placeOrder({

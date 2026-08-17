@@ -1,3 +1,4 @@
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/network/api_client.dart';
 import '../../../core/network/api_endpoints.dart';
 import '../models/product_model.dart';
@@ -42,9 +43,10 @@ class FeaturedResult {
 
 // ─── Repository ───────────────────────────────────────────────────────────────
 
+final productRepositoryProvider = Provider((ref) => ProductRepository());
+
 class ProductRepository {
-  ProductRepository._();
-  static final ProductRepository instance = ProductRepository._();
+  ProductRepository();
 
   // ── Helpers ────────────────────────────────────────────────────────────────
 

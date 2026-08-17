@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 import '../../core/theme/app_colors.dart';
 import './models/notification_model.dart';
@@ -10,22 +11,31 @@ void showNotificationsSheet(BuildContext context) {
     isScrollControlled: true,
     backgroundColor: Colors.transparent,
     builder: (_) => const _NotificationsSheet(),
-  ).then((_) {
-    NotificationStore.instance.markAllRead();
-  });
+  );
 }
 
-class _NotificationsSheet extends StatefulWidget {
+class _NotificationsSheet extends ConsumerStatefulWidget {
   const _NotificationsSheet();
   @override
-  State<_NotificationsSheet> createState() => _NotificationsSheetState();
+  ConsumerState<_NotificationsSheet> createState() => _NotificationsSheetState();
 }
 
-class _NotificationsSheetState extends State<_NotificationsSheet> {
-  final _store = NotificationStore.instance;
+class _NotificationsSheetState extends ConsumerState<_NotificationsSheet> {
+  @override
+  void dispose() {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) {
+        ref.read(notificationProvider.notifier).markAllRead();
+      }
+    });
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
+    final notifications = ref.watch(notificationProvider);
+    final notifier = ref.read(notificationProvider.notifier);
+
     return DraggableScrollableSheet(
       initialChildSize: 0.78,
       minChildSize: 0.4,
@@ -38,16 +48,13 @@ class _NotificationsSheetState extends State<_NotificationsSheet> {
         child: Column(
           children: [
             _buildHandle(),
-            _buildHeader(),
+            _buildHeader(notifier),
             Expanded(
-              child: ListenableBuilder(
-                listenable: _store,
-                builder: (_, __) => _store.all.isEmpty
-                    ? _buildEmpty()
-                    : _buildList(controller),
-              ),
+              child: notifications.isEmpty
+                  ? _buildEmpty()
+                  : _buildList(controller, notifications, notifier),
             ),
-            _buildClearButton(),
+            _buildClearButton(notifier),
           ],
         ),
       ),
@@ -65,7 +72,7 @@ class _NotificationsSheetState extends State<_NotificationsSheet> {
     ),
   );
 
-  Widget _buildHeader() => Padding(
+  Widget _buildHeader(NotificationStore notifier) => Padding(
     padding: const EdgeInsets.fromLTRB(20, 0, 20, 16),
     child: Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -73,7 +80,7 @@ class _NotificationsSheetState extends State<_NotificationsSheet> {
         Text('NOTIFICATIONS',
           style: Theme.of(context).textTheme.labelLarge),
         GestureDetector(
-          onTap: () => setState(() => _store.markAllRead()),
+          onTap: () => notifier.markAllRead(),
           child: const Text('Mark all read',
             style: TextStyle(fontSize: 11, color: AppColors.primary,
                 letterSpacing: 0.5)),
@@ -82,7 +89,7 @@ class _NotificationsSheetState extends State<_NotificationsSheet> {
     ),
   );
 
-  Widget _buildList(ScrollController controller) {
+  Widget _buildList(ScrollController controller, List<AppNotification> notifications, NotificationStore notifier) {
     final sections = [
       (label: 'Orders',      type: NotificationType.order),
       (label: 'Promotions',  type: NotificationType.promo),
@@ -92,11 +99,11 @@ class _NotificationsSheetState extends State<_NotificationsSheet> {
       controller: controller,
       children: [
         for (final s in sections)
-          if (_store.byType(s.type).isNotEmpty) ...[
+          if (notifier.byType(s.type).isNotEmpty) ...[
             _SectionLabel(s.label),
-            for (final n in _store.byType(s.type))
+            for (final n in notifier.byType(s.type))
               _NotifTile(notification: n,
-                  onDismiss: () => setState(() => _store.remove(n.id))),
+                  onDismiss: () => notifier.remove(n.id)),
           ],
       ],
     );
@@ -110,12 +117,12 @@ class _NotificationsSheetState extends State<_NotificationsSheet> {
     ]),
   );
 
-  Widget _buildClearButton() => SafeArea(
+  Widget _buildClearButton(NotificationStore notifier) => SafeArea(
     top: false,
     child: Padding(
       padding: const EdgeInsets.fromLTRB(20, 8, 20, 12),
       child: GestureDetector(
-        onTap: () => setState(() => _store.clearAll()),
+        onTap: () => notifier.clearAll(),
         child: Container(
           padding: const EdgeInsets.symmetric(vertical: 14),
           decoration: BoxDecoration(

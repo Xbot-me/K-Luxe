@@ -1,24 +1,25 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../product_detail_screen.dart';
 import '../repositories/product_repository.dart';
 import '../models/product_model.dart';
 
-class ProductDetailFetchScreen extends StatefulWidget {
+class ProductDetailFetchScreen extends ConsumerStatefulWidget {
   final String id;
   const ProductDetailFetchScreen({super.key, required this.id});
 
   @override
-  State<ProductDetailFetchScreen> createState() => _ProductDetailFetchScreenState();
+  ConsumerState<ProductDetailFetchScreen> createState() => _ProductDetailFetchScreenState();
 }
 
-class _ProductDetailFetchScreenState extends State<ProductDetailFetchScreen> {
+class _ProductDetailFetchScreenState extends ConsumerState<ProductDetailFetchScreen> {
   Product? _product;
   String? _error;
 
   @override
   void initState() {
     super.initState();
-    ProductRepository.instance.getProduct(widget.id).then((p) {
+    ref.read(productRepositoryProvider).getProduct(widget.id).then((p) {
       if (mounted) setState(() => _product = p);
     }).catchError((e) {
       if (mounted) setState(() => _error = 'Product not found');
