@@ -60,6 +60,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   // ── Data ──────────────────────────────────────────────────────────────────
   List<Product> _products = [];
   List<String> _categories = ['ALL'];
+  bool _isInitialLoad = true;
   bool _isLoading = true;
   String? _error;
 
@@ -100,7 +101,10 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
       final products = await ref.read(productRepositoryProvider).getProducts(
         category: category == 'ALL' ? null : category,
       );
-      if (mounted) setState(() => _products = products.products);
+      if (mounted) setState(() {
+        _products = products.products;
+        _isInitialLoad = false;
+      });
     } on ApiException catch (e) {
       if (mounted) setState(() => _error = e.message);
     } catch (_) {
@@ -215,7 +219,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
 
   // ── Home body ─────────────────────────────────────────────────────────────
   Widget _buildHomeBody() {
-    if (_isLoading) return const HomeSkeleton();
+    if (_isLoading && _isInitialLoad) return const HomeSkeleton();
     if (_searchActive) return _buildSearchResults();
 
     final trending = _products.take(4).toList();
@@ -321,58 +325,65 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
             onCategorySelected: _onCategorySelected,
           ),
           const SizedBox(height: 32),
-          if (trending.isNotEmpty) ...[
-            SectionHeader(title: 'Trending Albums', onViewAll: () => _onTabChanged(2)),
-            const SizedBox(height: 20),
-            SizedBox(
-              height: 320,
-              child: ListView.builder(
-                scrollDirection: Axis.horizontal,
-                physics: const BouncingScrollPhysics(),
-                padding: const EdgeInsets.symmetric(horizontal: 24),
-                itemCount: trending.length,
-                itemBuilder: (_, i) => CinematicCard(product: trending[i]),
-              ),
-            ),
+          if (_isLoading && !_isInitialLoad) ...[
+            const ProductSectionSkeleton(),
             const SizedBox(height: 48),
-          ],
-          const FeaturedArtistBanner(),
-          const SizedBox(height: 48),
-          if (newReleases.isNotEmpty) ...[
-            SectionHeader(title: 'New Releases', onViewAll: () => _onTabChanged(2)),
-            const SizedBox(height: 20),
-            SizedBox(
-              height: 310,
-              child: ListView.builder(
-                scrollDirection: Axis.horizontal,
-                physics: const BouncingScrollPhysics(),
-                padding: const EdgeInsets.symmetric(horizontal: 24),
-                itemCount: newReleases.length,
-                itemBuilder: (_, i) => SharedProductCard(product: newReleases[i], variant: ProductCardVariant.horizontal),
-              ),
-            ),
+            const ProductSectionSkeleton(),
             const SizedBox(height: 48),
-          ],
-          if (bestSellers.isNotEmpty) ...[
-            SectionHeader(title: 'Best Sellers', onViewAll: () => _onTabChanged(2)),
-            const SizedBox(height: 20),
-            BestSellersGrid(products: bestSellers),
-            const SizedBox(height: 48),
-          ],
-          if (recentlyViewed.isNotEmpty) ...[
-            SectionHeader(title: 'Recently Viewed', onViewAll: () {}),
-            const SizedBox(height: 20),
-            SizedBox(
-              height: 160,
-              child: ListView.builder(
-                scrollDirection: Axis.horizontal,
-                physics: const BouncingScrollPhysics(),
-                padding: const EdgeInsets.symmetric(horizontal: 24),
-                itemCount: recentlyViewed.length,
-                itemBuilder: (_, i) => RecentlyViewedCard(product: recentlyViewed[i]),
+          ] else ...[
+            if (trending.isNotEmpty) ...[
+              SectionHeader(title: 'Trending Albums', onViewAll: () => _onTabChanged(2)),
+              const SizedBox(height: 20),
+              SizedBox(
+                height: 320,
+                child: ListView.builder(
+                  scrollDirection: Axis.horizontal,
+                  physics: const BouncingScrollPhysics(),
+                  padding: const EdgeInsets.symmetric(horizontal: 24),
+                  itemCount: trending.length,
+                  itemBuilder: (_, i) => CinematicCard(product: trending[i]),
+                ),
               ),
-            ),
-            const SizedBox(height: 40),
+              const SizedBox(height: 48),
+            ],
+            const FeaturedArtistBanner(),
+            const SizedBox(height: 48),
+            if (newReleases.isNotEmpty) ...[
+              SectionHeader(title: 'New Releases', onViewAll: () => _onTabChanged(2)),
+              const SizedBox(height: 20),
+              SizedBox(
+                height: 310,
+                child: ListView.builder(
+                  scrollDirection: Axis.horizontal,
+                  physics: const BouncingScrollPhysics(),
+                  padding: const EdgeInsets.symmetric(horizontal: 24),
+                  itemCount: newReleases.length,
+                  itemBuilder: (_, i) => SharedProductCard(product: newReleases[i], variant: ProductCardVariant.horizontal),
+                ),
+              ),
+              const SizedBox(height: 48),
+            ],
+            if (bestSellers.isNotEmpty) ...[
+              SectionHeader(title: 'Best Sellers', onViewAll: () => _onTabChanged(2)),
+              const SizedBox(height: 20),
+              BestSellersGrid(products: bestSellers),
+              const SizedBox(height: 48),
+            ],
+            if (recentlyViewed.isNotEmpty) ...[
+              SectionHeader(title: 'Recently Viewed', onViewAll: () {}),
+              const SizedBox(height: 20),
+              SizedBox(
+                height: 160,
+                child: ListView.builder(
+                  scrollDirection: Axis.horizontal,
+                  physics: const BouncingScrollPhysics(),
+                  padding: const EdgeInsets.symmetric(horizontal: 24),
+                  itemCount: recentlyViewed.length,
+                  itemBuilder: (_, i) => RecentlyViewedCard(product: recentlyViewed[i]),
+                ),
+              ),
+              const SizedBox(height: 40),
+            ],
           ],
         ],
       ),

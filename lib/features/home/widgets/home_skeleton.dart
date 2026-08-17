@@ -86,3 +86,47 @@ class HomeSkeleton extends StatelessWidget {
     );
   }
 }
+
+class ProductSectionSkeleton extends StatelessWidget {
+  const ProductSectionSkeleton({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return Shimmer.fromColors(
+      baseColor: AppColors.surface,
+      highlightColor: AppColors.surface.withValues(alpha: 0.5),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 24),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Container(height: 24, width: 160, color: Colors.white),
+                Container(height: 14, width: 60, color: Colors.white),
+              ],
+            ),
+          ),
+          const SizedBox(height: 20),
+          SizedBox(
+            height: 320,
+            child: ListView.builder(
+              scrollDirection: Axis.horizontal,
+              padding: const EdgeInsets.symmetric(horizontal: 24),
+              itemCount: 3,
+              itemBuilder: (_, i) => Container(
+                width: 240,
+                margin: const EdgeInsets.only(right: 20),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(16),
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
