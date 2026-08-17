@@ -9,25 +9,37 @@ final orderRepositoryProvider = Provider((ref) => OrderRepository());
 class OrderRepository {
   OrderRepository();
 
-  // ── Place a new order ──
- Future<String> placeOrder({
-  required String addressId,
-  required String paymentMethod,
-}) async {
-  final data = await ApiClient.post(
-    ApiEndpoints.checkoutProcess, // /api/checkout/process
-    body: {
-      'addressId': addressId,
-      'paymentMethod': paymentMethod,
-    },
-    requiresAuth: true,
-  );
+  Future<String> placeOrder({
+    required String cartToken,
+    required Map<String, dynamic> billingAddress,
+    required Map<String, dynamic> shippingAddress,
+    required String paymentMethod,
+    String? idempotencyKey,
+  }) async {
+    final key = idempotencyKey ??
+        'flutter-order-${DateTime.now().millisecondsSinceEpoch}-${cartToken.hashCode}';
 
-  return data['orderId'] as String? ??
-      data['id'] as String? ??
-      data['order']?['id'] as String? ??
-      'ORD-${DateTime.now().millisecondsSinceEpoch.toString().substring(7)}';
-}
+    final data = await ApiClient.post(
+      ApiEndpoints.checkoutProcess, // /api/checkout/process
+      body: {
+        'cartToken': cartToken,
+        'nonce': 'flutter-nonce-${DateTime.now().millisecondsSinceEpoch}',
+        'billingAddress': billingAddress,
+        'shippingAddress': shippingAddress,
+        'paymentMethod': paymentMethod,
+      },
+      requiresAuth: true,
+      extraHeaders: {
+        'X-Idempotency-Key': key,
+        if (cartToken.isNotEmpty) 'Cart-Token': cartToken,
+      },
+    );
+
+    return data['orderId'] as String? ??
+        data['id'] as String? ??
+        data['order']?['id'] as String? ??
+        'ORD-${DateTime.now().millisecondsSinceEpoch.toString().substring(7)}';
+  }
 
   // ── Get all orders for current user ──
   Future<List<Order>> getOrders() async {

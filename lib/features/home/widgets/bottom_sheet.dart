@@ -287,7 +287,7 @@ class _QuickAddBottomSheetState extends ConsumerState<QuickAddBottomSheet> {
                           setState(() => _isAdding = true);
                           await ref.read(cartProvider.notifier).addProduct(
                             product,
-                            variantId: selectedVariant?.id,
+                            variantId: selectedVariant.id,
                             selectedOptions: _selectedOptions,
                           );
                           if (mounted) {

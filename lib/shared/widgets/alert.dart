@@ -32,9 +32,9 @@ class KLuxeAlert extends StatelessWidget {
         accentColor = AppColors.primary;
         break;
       case AlertType.success:
-      default:
         icon = LucideIcons.checkCircle;
         accentColor = AppColors.success;
+        break;
     }
 
     return Material(

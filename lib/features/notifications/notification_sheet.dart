@@ -169,7 +169,7 @@ class _NotifTile extends StatelessWidget {
       direction: DismissDirection.endToStart,
       background: Container(
         alignment: Alignment.centerRight,
-        color: AppColors.error.withOpacity(0.15),
+        color: AppColors.error.withValues(alpha: 0.15),
         padding: const EdgeInsets.only(right: 20),
         child: const Icon(LucideIcons.trash2, color: AppColors.error, size: 18),
       ),
@@ -205,9 +205,9 @@ class _IconBadge extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final (icon, bg, fg) = switch (type) {
-      NotificationType.order  => (LucideIcons.package,     AppColors.success.withOpacity(0.12),  AppColors.success),
-      NotificationType.promo  => (LucideIcons.zap,          AppColors.primary.withOpacity(0.12),  AppColors.primary),
-      NotificationType.update => (LucideIcons.megaphone,   AppColors.secondary.withOpacity(0.12), AppColors.secondary),
+      NotificationType.order  => (LucideIcons.package,     AppColors.success.withValues(alpha: 0.12),  AppColors.success),
+      NotificationType.promo  => (LucideIcons.zap,          AppColors.primary.withValues(alpha: 0.12),  AppColors.primary),
+      NotificationType.update => (LucideIcons.megaphone,   AppColors.secondary.withValues(alpha: 0.12), AppColors.secondary),
     };
     return Container(
       width: 38, height: 38,
@@ -261,9 +261,9 @@ class _Chip extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final (bg, fg) = switch (type) {
-      NotificationType.order  => (AppColors.success.withOpacity(0.13), AppColors.success),
-      NotificationType.promo  => (AppColors.primary.withOpacity(0.13), AppColors.primary),
-      NotificationType.update => (AppColors.secondary.withOpacity(0.13), AppColors.secondary),
+      NotificationType.order  => (AppColors.success.withValues(alpha: 0.13), AppColors.success),
+      NotificationType.promo  => (AppColors.primary.withValues(alpha: 0.13), AppColors.primary),
+      NotificationType.update => (AppColors.secondary.withValues(alpha: 0.13), AppColors.secondary),
     };
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),

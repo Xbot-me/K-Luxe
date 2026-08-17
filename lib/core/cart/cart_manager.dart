@@ -89,6 +89,20 @@ class CartNotifier extends Notifier<List<CartItem>> {
     }
   }
 
+  Future<void> mergeAndReloadCart() async {
+    try {
+      final repo = ref.read(cartRepositoryProvider);
+      final guestToken = repo.cartToken;
+      if (guestToken != null && guestToken.isNotEmpty) {
+        await repo.mergeCart(guestToken);
+      }
+      await initCart();
+    } catch (e) {
+      debugPrint('Cart mergeAndReload failed: $e');
+      await initCart();
+    }
+  }
+
   Future<void> addProduct(
     Product product, {
     int colorIndex = 0,

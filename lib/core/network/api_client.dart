@@ -13,11 +13,11 @@ class ApiClient {
   // ── Build headers ──
   static Future<Map<String, String>> _headers({
     bool requiresAuth = true,
+    Map<String, String>? extraHeaders,
   }) async {
     final headers = <String, String>{
       'Content-Type': 'application/json',
       'Accept': 'application/json',
-      //'ngrok-skip-browser-warning': 'true' //for ngork
     };
 
     if (requiresAuth) {
@@ -25,6 +25,10 @@ class ApiClient {
       if (token != null) {
         headers['Authorization'] = 'Bearer $token';
       }
+    }
+
+    if (extraHeaders != null) {
+      headers.addAll(extraHeaders);
     }
 
     return headers;
@@ -140,13 +144,14 @@ class ApiClient {
     String url, {
     Map<String, String>? queryParams,
     bool requiresAuth = true,
+    Map<String, String>? extraHeaders,
   }) async {
     return _safe(() async {
       final uri = Uri.parse(url).replace(queryParameters: queryParams);
       final response = await _executeLoggedRequest(
         'GET',
         uri,
-        await _headers(requiresAuth: requiresAuth),
+        await _headers(requiresAuth: requiresAuth, extraHeaders: extraHeaders),
       );
       return _parse(response);
     });
@@ -157,12 +162,13 @@ class ApiClient {
     String url, {
     required Map<String, dynamic> body,
     bool requiresAuth = false,
+    Map<String, String>? extraHeaders,
   }) async {
     return _safe(() async {
       final response = await _executeLoggedRequest(
         'POST',
         Uri.parse(url),
-        await _headers(requiresAuth: requiresAuth),
+        await _headers(requiresAuth: requiresAuth, extraHeaders: extraHeaders),
         body: jsonEncode(body),
       );
       return _parse(response);
@@ -190,12 +196,13 @@ class ApiClient {
   static Future<Map<String, dynamic>> delete(
     String url, {
     bool requiresAuth = true,
+    Map<String, String>? extraHeaders,
   }) async {
     return _safe(() async {
       final response = await _executeLoggedRequest(
         'DELETE',
         Uri.parse(url),
-        await _headers(requiresAuth: requiresAuth),
+        await _headers(requiresAuth: requiresAuth, extraHeaders: extraHeaders),
       );
       return _parse(response);
     });

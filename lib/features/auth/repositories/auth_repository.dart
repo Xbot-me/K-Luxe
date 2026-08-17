@@ -92,4 +92,12 @@ class AuthRepository {
       return false;
     }
   }
+
+  // ── Delete account ──
+  // Required by App Store / Play Store / GDPR
+  Future<void> deleteAccount() async {
+    await ApiClient.delete(ApiEndpoints.deleteAccount, requiresAuth: true);
+    await TokenStorage.clear();
+    _currentUser = null;
+  }
 }

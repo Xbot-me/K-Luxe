@@ -83,7 +83,7 @@ class ProductRepository {
         },
       );
       return ProductsResult(
-        products: _parseList(data['products']),
+        products: _parseList(data['results'] ?? data['products']),
         total: (data['total'] as num?)?.toInt() ?? 0,
         totalPages: (data['totalPages'] as num?)?.toInt() ?? 1,
       );
@@ -177,7 +177,7 @@ class ProductRepository {
     );
 
     return SearchResult(
-      products: _parseList(data['products']),
+      products: _parseList(data['results'] ?? data['products']),
       total: (data['total'] as num?)?.toInt() ?? 0,
       totalPages: (data['totalPages'] as num?)?.toInt() ?? 1,
     );

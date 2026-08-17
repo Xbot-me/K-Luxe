@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/theme/app_colors.dart';
 import '../../shared/widgets/primary_button.dart';
 import 'signup_screen.dart';
+import 'forgot_password_screen.dart';
 import '../home/home_screen.dart';
 import '../../core/cart/cart_manager.dart';
 import './repositories/auth_repository.dart';
@@ -42,8 +43,8 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
       password: _passwordController.text,
     );
 
-    // Load user's server-side cart after login
-    await ref.read(cartProvider.notifier).initCart();
+    // Merge guest cart with user's server-side cart after login
+    await ref.read(cartProvider.notifier).mergeAndReloadCart();
 
     if (!mounted) return;
     Navigator.pushReplacement(
@@ -139,7 +140,14 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                 Align(
                   alignment: Alignment.centerRight,
                   child: TextButton(
-                    onPressed: () {},
+                    onPressed: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) => const ForgotPasswordScreen(),
+                        ),
+                      );
+                    },
                     child: const Text(
                       'Forgot password?',
                       style: TextStyle(color: AppColors.primary, fontSize: 13),
@@ -248,7 +256,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
             'or continue with',
             style: TextStyle(
               fontSize: 12,
-              color: AppColors.textSecondary.withOpacity(0.8),
+              color: AppColors.textSecondary.withValues(alpha: 0.8),
             ),
           ),
         ),

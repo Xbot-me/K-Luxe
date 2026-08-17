@@ -140,7 +140,7 @@ class _OrderConfirmScreenState extends State<OrderConfirmScreen>
           shape: BoxShape.circle,
           color: AppColors.successLight,
           border: Border.all(
-            color: AppColors.success.withOpacity(0.3),
+            color: AppColors.success.withValues(alpha: 0.3),
             width: 2,
           ),
         ),

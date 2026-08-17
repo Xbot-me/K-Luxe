@@ -21,6 +21,7 @@ class ApiEndpoints {
   static String get cartRemove => '$baseUrl/cart/remove'; // POST/DELETE remove
   static String get cartUpdate => '$baseUrl/cart/update'; // POST/PUT update qty
   static String get cartCoupon => '$baseUrl/cart/coupon'; // POST apply coupon
+  static String get cartMerge => '$baseUrl/cart/merge'; // POST merge cart
 
   // ── Checkout ──
   static String get checkoutProcess =>
@@ -36,6 +37,7 @@ class ApiEndpoints {
   // ── User ──
   static String get userProfile => '$baseUrl/user/profile';
   static String get userAddresses => '$baseUrl/user/addresses';
+  static String get deleteAccount => '$baseUrl/user/delete';
 
   // ── Payments (NEW) ──
   static String get createPaymentSession => '$baseUrl/payments/create-session';

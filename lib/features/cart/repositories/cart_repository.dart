@@ -12,10 +12,17 @@ class CartRepository {
   String? _cartToken; // stored once, sent with every request
   String? get cartToken => _cartToken;
 
+  /// Build the Cart-Token header map for BFF requests.
+  Map<String, String>? get _cartHeaders =>
+      _cartToken != null ? {'Cart-Token': _cartToken!} : null;
+
   // ── Call this on app start, before any cart operations ──
   Future<void> initCart() async {
     try {
-      final data = await ApiClient.get(ApiEndpoints.cart);
+      final data = await ApiClient.get(
+        ApiEndpoints.cart,
+        extraHeaders: _cartHeaders,
+      );
       _cartToken = data['cart']?['cartToken'] as String?;
       debugPrint('Cart token: $_cartToken');
     } catch (e) {
@@ -26,8 +33,7 @@ class CartRepository {
   Future<List<BffCartItem>> getCart() async {
     final data = await ApiClient.get(
       ApiEndpoints.cart,
-      // send token if we have it
-      queryParams: _cartToken != null ? {'cartToken': _cartToken!} : null,
+      extraHeaders: _cartHeaders,
     );
     _cartToken ??= data['cart']?['cartToken'] as String?;
     final cart = data['cart'] as Map<String, dynamic>?;
@@ -50,11 +56,11 @@ class CartRepository {
       body: {
         'productId': productId,
         'quantity': quantity,
-        if (_cartToken != null) 'cartToken': _cartToken,
         if (variantId != null) 'variantId': variantId,
         if (selectedOptions.isNotEmpty) 'selectedOptions': selectedOptions,
       },
       requiresAuth: true,
+      extraHeaders: _cartHeaders,
     );
     // Update token in case BFF rotates it
     _cartToken ??= data['cart']?['cartToken'] as String?;
@@ -78,26 +84,30 @@ class CartRepository {
         if (cartKey != null) 'key': cartKey
         else 'productId': productId,
         'quantity': quantity,
-        if (_cartToken != null) 'cartToken': _cartToken,
         if (variantId != null && cartKey == null) 'variantId': variantId,
       },
       requiresAuth: true,
+      extraHeaders: _cartHeaders,
     );
   }
 
   Future<void> removeItem(String key) async {
-  await ApiClient.post(
-    ApiEndpoints.cartRemove,
-    body: {
-      'key': key,
-      if (_cartToken != null) 'cartToken': _cartToken,
-    },
-    requiresAuth: true,
-  );
+    await ApiClient.post(
+      ApiEndpoints.cartRemove,
+      body: {
+        'key': key,
+      },
+      requiresAuth: true,
+      extraHeaders: _cartHeaders,
+    );
   }
 
   Future<void> clearCart() async {
-    await ApiClient.delete(ApiEndpoints.cart, requiresAuth: true);
+    await ApiClient.delete(
+      ApiEndpoints.cart,
+      requiresAuth: true,
+      extraHeaders: _cartHeaders,
+    );
     _cartToken = null; // cleared cart = no more token
   }
 
@@ -106,9 +116,23 @@ class CartRepository {
       ApiEndpoints.cartCoupon,
       body: {
         'code': code,
-        if (_cartToken != null) 'cartToken': _cartToken,
       },
       requiresAuth: true,
+      extraHeaders: _cartHeaders,
     );
+  }
+
+  Future<void> mergeCart(String guestCartToken) async {
+    try {
+      final data = await ApiClient.post(
+        ApiEndpoints.cartMerge,
+        body: {'guestCartToken': guestCartToken},
+        requiresAuth: true,
+        extraHeaders: _cartHeaders,
+      );
+      _cartToken = data['cart']?['cartToken'] as String? ?? _cartToken;
+    } catch (e) {
+      debugPrint('Cart merge failed: $e');
+    }
   }
 }

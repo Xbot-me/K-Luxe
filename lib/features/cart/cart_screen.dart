@@ -162,7 +162,7 @@ class _CartScreenState extends ConsumerState<CartScreen>
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    '${items.fold(0, (sum, i) => sum + i.quantity as int)} items securely held.',
+                    '${items.fold(0, (sum, i) => sum + i.quantity)} items securely held.',
                     style: Theme.of(context).textTheme.bodyMedium,
                   ),
                   const SizedBox(height: 32),

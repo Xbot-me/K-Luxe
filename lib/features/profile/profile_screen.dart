@@ -99,6 +99,113 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen>
     );
   }
 
+  // ── Delete account ──
+  Future<void> _deleteAccount() async {
+    final controller = TextEditingController();
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (_) => StatefulBuilder(
+        builder: (context, setDialogState) {
+          return AlertDialog(
+            backgroundColor: const Color(0xFF1A1A1A),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(20),
+              side: BorderSide(color: AppColors.error.withValues(alpha: 0.3)),
+            ),
+            title: const Text(
+              'Delete Account?',
+              style: TextStyle(color: Colors.white, fontWeight: FontWeight.w700),
+            ),
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text(
+                  'This action is permanent and cannot be undone. '
+                  'All your data, order history, and rewards will be lost.',
+                  style: TextStyle(color: Colors.white54, height: 1.5),
+                ),
+                const SizedBox(height: 16),
+                const Text(
+                  'Type DELETE to confirm:',
+                  style: TextStyle(
+                    color: Colors.white70,
+                    fontSize: 13,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                TextField(
+                  controller: controller,
+                  onChanged: (_) => setDialogState(() {}),
+                  style: const TextStyle(color: Colors.white),
+                  decoration: InputDecoration(
+                    hintText: 'DELETE',
+                    hintStyle: TextStyle(color: Colors.white.withValues(alpha: 0.2)),
+                    filled: true,
+                    fillColor: Colors.white.withValues(alpha: 0.05),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(10),
+                      borderSide: BorderSide.none,
+                    ),
+                    contentPadding: const EdgeInsets.symmetric(
+                      horizontal: 14, vertical: 12,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context, false),
+                child: const Text(
+                  'Cancel',
+                  style: TextStyle(color: Colors.white54),
+                ),
+              ),
+              ElevatedButton(
+                onPressed: controller.text.trim() == 'DELETE'
+                    ? () => Navigator.pop(context, true)
+                    : null,
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppColors.error,
+                  disabledBackgroundColor: AppColors.error.withValues(alpha: 0.3),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                ),
+                child: const Text('Delete Forever'),
+              ),
+            ],
+          );
+        },
+      ),
+    );
+
+    controller.dispose();
+    if (confirmed != true || !mounted) return;
+
+    try {
+      await ref.read(authRepositoryProvider).deleteAccount();
+
+      if (!mounted) return;
+      Navigator.pushAndRemoveUntil(
+        context,
+        MaterialPageRoute(builder: (_) => const LoginScreen()),
+        (route) => false,
+      );
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Failed to delete account: $e'),
+          backgroundColor: AppColors.error,
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+    }
+  }
+
   @override
   bool get wantKeepAlive => true;
   @override
@@ -216,6 +323,13 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen>
                       labelColor: AppColors.error,
                       iconColor: AppColors.error,
                       onTap: _signOut,
+                    ),
+                    _MenuItemData(
+                      icon: LucideIcons.trash2,
+                      label: 'Delete Account',
+                      labelColor: AppColors.error.withValues(alpha: 0.7),
+                      iconColor: AppColors.error.withValues(alpha: 0.7),
+                      onTap: _deleteAccount,
                     ),
                   ]).animate().fadeIn(delay: 700.ms),
 

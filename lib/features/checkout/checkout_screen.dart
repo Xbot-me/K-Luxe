@@ -12,6 +12,7 @@ import '../../core/constants/dummy_data.dart';
 import '../order/order_confirm_screen.dart';
 import 'models/address_model.dart';
 import '../../features/order/repositories/order_repository.dart';
+import '../../features/auth/repositories/auth_repository.dart';
 import '../../core/network/api_exception.dart';
 import './services/shipping_service.dart';
 import '../../shared/widgets/glass_container.dart';
@@ -173,6 +174,24 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
     };
   }
 
+  Map<String, dynamic> _buildUserAddressPayload(Address address) {
+    final nameParts = address.name.trim().split(RegExp(r'\s+'));
+    final firstName = nameParts.first;
+    final lastName = nameParts.length > 1 ? nameParts.sublist(1).join(' ') : '';
+    
+    return {
+      'firstName': firstName,
+      'lastName': lastName,
+      'address1': address.line1,
+      'address2': address.line2,
+      'city': address.city,
+      'state': address.city,
+      'postcode': '1200',
+      'country': 'BD',
+      'phone': address.phone,
+    };
+  }
+
   // ── 5. Place order ──
   Future<void> _placeOrder() async {
     if (_selectedRate == null) {
@@ -188,10 +207,21 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
     setState(() => _isPlacingOrder = true);
 
     try {
+      final user = ref.read(authRepositoryProvider).currentUser;
+      final email = user?.email ?? 'guest@example.com';
+      final shippingAddress = _buildUserAddressPayload(_selectedAddress);
+      final billingAddress = {
+        ...shippingAddress,
+        'email': email,
+      };
+      final cartToken = ref.read(cartProvider.notifier).cartToken ?? '';
+
       // ── COD / bKash (normal BFF flow) ──
       if (_selectedPayment != PaymentMethod.card) {
         final orderId = await ref.read(orderRepositoryProvider).placeOrder(
-          addressId: _selectedAddressId,
+          cartToken: cartToken,
+          billingAddress: billingAddress,
+          shippingAddress: shippingAddress,
           paymentMethod: _selectedPayment.name,
         );
         _handleSuccessfulOrder(orderId);

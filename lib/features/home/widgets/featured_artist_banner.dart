@@ -11,7 +11,7 @@ class FeaturedArtistBanner extends StatelessWidget {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 24),
       child: GestureDetector(
-        onTap: () => context.push('/category/albums'),
+        onTap: () => context.push('/shop?category=Albums'),
         child: Container(
           height: 160,
           decoration: BoxDecoration(
