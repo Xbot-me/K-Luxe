@@ -43,7 +43,7 @@ class ApiEndpoints {
 
 
   // In api_endpoints.dart — add these if missing:
-  static const String categories      = '$baseUrl/products/categories';
-  static const String featuredProducts = '$baseUrl/products/featured';
-  static const String searchProducts  = '$baseUrl/products/search';
+  static String get categories      => '$baseUrl/products/categories';
+  static String get featuredProducts => '$baseUrl/products/featured';
+  static String get searchProducts  => '$baseUrl/products/search';
 }

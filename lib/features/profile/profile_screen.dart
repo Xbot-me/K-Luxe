@@ -33,16 +33,18 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen>
 
   // ── Derived display values from live user ──
   String get _displayName {
-    if (_user == null) return 'Guest';
-    if (_user.displayName.isNotEmpty) return _user.displayName;
-    return _user.email.split('@').first;
+    final u = _user;
+    if (u == null) return 'Guest';
+    if (u.displayName.isNotEmpty) return u.displayName;
+    return u.email.split('@').first;
   }
 
   String get _displayEmail => _user?.email ?? '';
 
   String get _initials {
-    if (_user == null) return 'G';
-    return _user.initials.isNotEmpty ? _user.initials : '?';
+    final u = _user;
+    if (u == null) return 'G';
+    return u.initials.isNotEmpty ? u.initials : '?';
   }
 
   // ── Sign out ──

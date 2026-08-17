@@ -213,93 +213,95 @@ class SharedProductCard extends ConsumerWidget {
             ],
           ),
           if (isHorizontal) const SizedBox(height: 12),
-          Widget? bottomInfo = Padding(
-            padding: EdgeInsets.fromLTRB(10, 8, 10, isHorizontal ? 0 : 10),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              crossAxisAlignment: isHorizontal ? CrossAxisAlignment.end : CrossAxisAlignment.start,
+          if (isHorizontal) const SizedBox(height: 12),
+          if (isHorizontal)
+            Expanded(child: _buildBottomInfo(context, ref, isHorizontal))
+          else
+            _buildBottomInfo(context, ref, isHorizontal),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildBottomInfo(BuildContext context, WidgetRef ref, bool isHorizontal) {
+    return Padding(
+      padding: EdgeInsets.fromLTRB(10, 8, 10, isHorizontal ? 0 : 10),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        crossAxisAlignment: isHorizontal ? CrossAxisAlignment.end : CrossAxisAlignment.start,
+        children: [
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
               children: [
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    mainAxisSize: MainAxisSize.min,
+                _buildCategoryPill(isGlass: false),
+                SizedBox(height: isHorizontal ? 4 : 3),
+                Text(
+                  product.name,
+                  style: TextStyle(
+                    color: AppColors.onBackground,
+                    fontSize: isHorizontal ? 14 : 12,
+                    fontWeight: FontWeight.w500,
+                    height: isHorizontal ? 1.0 : 1.3,
+                  ),
+                  maxLines: isHorizontal ? 1 : 2,
+                  overflow: TextOverflow.ellipsis,
+                ),
+                SizedBox(height: isHorizontal ? 4 : 5),
+                if (_isOnSale)
+                  Row(
                     children: [
-                      _buildCategoryPill(isGlass: false),
-                      SizedBox(height: isHorizontal ? 4 : 3),
-                      Text(
-                        product.name,
-                        style: TextStyle(
-                          color: AppColors.onBackground,
-                          fontSize: isHorizontal ? 14 : 12,
-                          fontWeight: FontWeight.w500,
-                          height: isHorizontal ? 1.0 : 1.3,
-                        ),
-                        maxLines: isHorizontal ? 1 : 2,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                      SizedBox(height: isHorizontal ? 4 : 5),
-                      if (_isOnSale)
-                        Row(
-                          children: [
-                            Flexible(
-                              child: Text(
-                                '\$${product.regularPrice.toStringAsFixed(2)}',
-                                style: TextStyle(
-                                  color: AppColors.onSurfaceVariant,
-                                  fontSize: isHorizontal ? 11 : 10,
-                                  decoration: TextDecoration.lineThrough,
-                                ),
-                                overflow: TextOverflow.ellipsis,
-                              ),
-                            ),
-                            SizedBox(width: isHorizontal ? 6 : 4),
-                            Flexible(
-                              child: Text(
-                                '\$${product.price.toStringAsFixed(2)}',
-                                style: TextStyle(
-                                  color: const Color(0xFFBA7517),
-                                  fontSize: isHorizontal ? 13 : 12,
-                                  fontWeight: FontWeight.w600,
-                                ),
-                                overflow: TextOverflow.ellipsis,
-                              ),
-                            ),
-                          ],
-                        )
-                      else
-                        Text(
-                          '\$${product.price.toStringAsFixed(2)}',
+                      Flexible(
+                        child: Text(
+                          '\$${product.regularPrice.toStringAsFixed(2)}',
                           style: TextStyle(
-                            color: isHorizontal ? AppColors.onSurfaceVariant : AppColors.onSurfaceVariant,
-                            fontSize: isHorizontal ? 13 : 12,
-                            fontWeight: isHorizontal ? FontWeight.normal : FontWeight.w500,
+                            color: AppColors.onSurfaceVariant,
+                            fontSize: isHorizontal ? 11 : 10,
+                            decoration: TextDecoration.lineThrough,
                           ),
                           overflow: TextOverflow.ellipsis,
                         ),
-                    ],
-                  ),
-                ),
-                if (isHorizontal && !_isSoldOut)
-                  GestureDetector(
-                    onTap: () => _onAddToCart(context, ref),
-                    child: Container(
-                      padding: const EdgeInsets.all(8),
-                      decoration: BoxDecoration(
-                        color: Colors.white.withValues(alpha: 0.05),
-                        shape: BoxShape.circle,
                       ),
-                      child: const Icon(LucideIcons.plus, color: Colors.white, size: 18),
+                      SizedBox(width: isHorizontal ? 6 : 4),
+                      Flexible(
+                        child: Text(
+                          '\$${product.price.toStringAsFixed(2)}',
+                          style: TextStyle(
+                            color: const Color(0xFFBA7517),
+                            fontSize: isHorizontal ? 13 : 12,
+                            fontWeight: FontWeight.w600,
+                          ),
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                    ],
+                  )
+                else
+                  Text(
+                    '\$${product.price.toStringAsFixed(2)}',
+                    style: TextStyle(
+                      color: AppColors.onSurfaceVariant,
+                      fontSize: isHorizontal ? 13 : 12,
+                      fontWeight: isHorizontal ? FontWeight.normal : FontWeight.w500,
                     ),
+                    overflow: TextOverflow.ellipsis,
                   ),
               ],
             ),
-          );
-
-          if (isHorizontal) {
-            return Expanded(child: bottomInfo);
-          } else {
-            return bottomInfo;
-          }
+          ),
+          if (isHorizontal && !_isSoldOut)
+            GestureDetector(
+              onTap: () => _onAddToCart(context, ref),
+              child: Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: Colors.white.withValues(alpha: 0.05),
+                  shape: BoxShape.circle,
+                ),
+                child: const Icon(LucideIcons.plus, color: Colors.white, size: 18),
+              ),
+            ),
         ],
       ),
     );
