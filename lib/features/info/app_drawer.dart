@@ -607,7 +607,7 @@ class _SocialRow extends StatelessWidget {
 }
 
 class _SocialBtn extends StatefulWidget {
-  final IconData icon;
+  final dynamic icon;
   final String label;
   const _SocialBtn({required this.icon, required this.label});
 
@@ -644,7 +644,7 @@ class _SocialBtnState extends State<_SocialBtn> {
               width: 0.5,
             ),
           ),
-          child: Icon(
+          child: FaIcon(
             widget.icon,
             size: 18,
             color: _pressed ? AppColors.primary : const Color(0xFF9C94A8),
