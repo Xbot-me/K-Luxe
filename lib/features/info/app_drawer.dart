@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
+import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import '../../core/theme/app_colors.dart';
 import 'info_screen.dart';
 
@@ -592,13 +593,13 @@ class _SocialRow extends StatelessWidget {
       padding: const EdgeInsets.symmetric(horizontal: 24),
       child: Row(
         children: [
-          _SocialBtn(icon: LucideIcons.instagram, label: 'Instagram'),
+          _SocialBtn(icon: FontAwesomeIcons.instagram, label: 'Instagram'),
           const SizedBox(width: 10),
-          _SocialBtn(icon: LucideIcons.facebook, label: 'Facebook'),
+          _SocialBtn(icon: FontAwesomeIcons.facebook, label: 'Facebook'),
           const SizedBox(width: 10),
-          _SocialBtn(icon: LucideIcons.twitter, label: 'X / Twitter'),
+          _SocialBtn(icon: FontAwesomeIcons.xTwitter, label: 'X / Twitter'),
           const SizedBox(width: 10),
-          _SocialBtn(icon: LucideIcons.youtube, label: 'YouTube'),
+          _SocialBtn(icon: FontAwesomeIcons.youtube, label: 'YouTube'),
         ],
       ),
     );

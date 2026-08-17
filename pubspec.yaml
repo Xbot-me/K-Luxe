@@ -45,6 +45,7 @@ dependencies:
   flutter_animate: ^4.5.0
   glassmorphism: ^3.0.0
   lucide_icons_flutter: any
+  font_awesome_flutter: any
   shimmer: ^3.0.0
   flutter_inappwebview: ^6.1.5
   flutter_riverpod: ^2.5.1
