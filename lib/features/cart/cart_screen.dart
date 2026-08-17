@@ -107,10 +107,12 @@ class _CartScreenState extends ConsumerState<CartScreen>
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         elevation: 0,
-        leading: IconButton(
-          icon: const Icon(LucideIcons.arrowLeft),
-          onPressed: () => context.pop(),
-        ),
+        leading: context.canPop()
+            ? IconButton(
+                icon: const Icon(LucideIcons.arrowLeft),
+                onPressed: () => context.pop(),
+              )
+            : null,
         title: const Text('YOUR CART'),
         actions: [
           if (items.isNotEmpty)
