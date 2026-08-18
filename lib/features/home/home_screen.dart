@@ -12,6 +12,7 @@ import 'package:flutter_application_1/shared/widgets/alert.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 import '../../core/utils/alert_service.dart';
 import '../../core/theme/app_colors.dart';
+import '../../core/theme/theme_provider.dart';
 import '../../core/network/api_exception.dart';
 import '../../features/product/repositories/product_repository.dart';
 import '../product/models/product_model.dart';
@@ -260,7 +261,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
               ),
               // ────────────────────────────────────────
               Text(
-                'K-LUXE',
+                ref.watch(tenantBrandingProvider).appTitle.toUpperCase(),
                 style: Theme.of(context).textTheme.titleLarge?.copyWith(
                   letterSpacing: 8.0,
                   fontWeight: FontWeight.w900,
