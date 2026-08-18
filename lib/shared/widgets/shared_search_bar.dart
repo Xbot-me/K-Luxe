@@ -5,7 +5,9 @@ import '../../core/theme/app_colors.dart';
 class SharedSearchBar extends StatelessWidget {
   final TextEditingController controller;
   final ValueChanged<String> onChanged;
+  final ValueChanged<String>? onSubmitted;
   final ValueChanged<bool>? onFocus;
+  final VoidCallback? onTap;
   final bool autofocus;
   final VoidCallback? onFilterTap;
   final bool hasActiveFilters;
@@ -16,7 +18,9 @@ class SharedSearchBar extends StatelessWidget {
     super.key,
     required this.controller,
     required this.onChanged,
+    this.onSubmitted,
     this.onFocus,
+    this.onTap,
     this.autofocus = false,
     this.onFilterTap,
     this.hasActiveFilters = false,
@@ -37,6 +41,9 @@ class SharedSearchBar extends StatelessWidget {
                 controller: controller,
                 autofocus: autofocus,
                 onChanged: onChanged,
+                onSubmitted: onSubmitted,
+                onTap: onTap,
+                textInputAction: TextInputAction.search,
                 style: const TextStyle(color: AppColors.onBackground, fontSize: 14),
                 decoration: InputDecoration(
                   hintText: hintText,

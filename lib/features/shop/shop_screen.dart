@@ -190,6 +190,13 @@ class _ShopScreenState extends ConsumerState<ShopScreen>
             SharedSearchBar(
               controller: _searchController,
               onChanged: _onSearchChanged,
+              onSubmitted: (query) {
+                _searchDebounce?.cancel();
+                if (mounted) {
+                  setState(() => _searchQuery = query.trim());
+                  _loadProducts(reset: true);
+                }
+              },
               hasActiveFilters: _filters.hasActiveFilters,
               hintText: 'Search products...',
               onFilterTap: () => FilterBottomSheet.show(

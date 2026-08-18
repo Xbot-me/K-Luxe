@@ -24,13 +24,13 @@ class ProductsResult {
   };
 
   factory ProductsResult.fromJson(Map<String, dynamic> j) {
-    final rawList = j['products'] as List<dynamic>? ?? [];
+    final rawList = (j['products'] ?? j['results']) as List<dynamic>? ?? [];
     return ProductsResult(
       products: rawList
           .whereType<Map<dynamic, dynamic>>()
           .map((e) => Product.fromJson(Map<String, dynamic>.from(e)))
           .toList(),
-      total: (j['total'] as num?)?.toInt() ?? 0,
+      total: (j['total'] as num?)?.toInt() ?? rawList.length,
       totalPages: (j['totalPages'] as num?)?.toInt() ?? 1,
     );
   }
@@ -54,13 +54,13 @@ class SearchResult {
   };
 
   factory SearchResult.fromJson(Map<String, dynamic> j) {
-    final rawList = j['products'] as List<dynamic>? ?? [];
+    final rawList = (j['results'] ?? j['products']) as List<dynamic>? ?? [];
     return SearchResult(
       products: rawList
           .whereType<Map<dynamic, dynamic>>()
           .map((e) => Product.fromJson(Map<String, dynamic>.from(e)))
           .toList(),
-      total: (j['total'] as num?)?.toInt() ?? 0,
+      total: (j['total'] as num?)?.toInt() ?? rawList.length,
       totalPages: (j['totalPages'] as num?)?.toInt() ?? 1,
     );
   }

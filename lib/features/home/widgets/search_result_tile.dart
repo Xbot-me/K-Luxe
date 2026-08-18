@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import '../../../core/theme/app_colors.dart';
+import '../../../shared/widgets/app_cached_image.dart';
 import '../../product/models/product_model.dart';
 import '../store/recently_viewed_store.dart';
 
@@ -26,11 +27,12 @@ class SearchResultTile extends StatelessWidget {
           children: [
             ClipRRect(
               borderRadius: BorderRadius.circular(8),
-              child: Image.network(
-                product.displayImageUrl,
+              child: AppCachedImage(
+                imageUrl: product.displayImageUrl,
                 width: 52,
                 height: 52,
                 fit: BoxFit.cover,
+                memCacheWidth: 150,
               ),
             ),
             const SizedBox(width: 12),

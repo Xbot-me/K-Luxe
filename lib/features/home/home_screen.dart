@@ -124,20 +124,45 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   void _onSearchChanged(String query) {
     _searchDebounce?.cancel();
     if (query.trim().isEmpty) {
-      setState(() { _searchResults = []; _searchLoading = false; });
+      setState(() {
+        _searchResults = [];
+        _searchLoading = false;
+      });
       return;
     }
     setState(() => _searchLoading = true);
-    _searchDebounce = Timer(const Duration(milliseconds: 400), () async {
-      try {
-        final results = await ref.read(productRepositoryProvider).searchProducts(query.trim());
-        if (mounted) setState(() => _searchResults = results.products);
-      } catch (_) {
-        if (mounted) setState(() => _searchResults = []);
-      } finally {
-        if (mounted) setState(() => _searchLoading = false);
-      }
+    _searchDebounce = Timer(const Duration(milliseconds: 300), () {
+      _performSearch(query);
     });
+  }
+
+  Future<void> _performSearch(String query) async {
+    _searchDebounce?.cancel();
+    final trimmed = query.trim();
+    if (trimmed.isEmpty) {
+      setState(() {
+        _searchResults = [];
+        _searchLoading = false;
+      });
+      return;
+    }
+
+    setState(() => _searchLoading = true);
+    try {
+      final results =
+          await ref.read(productRepositoryProvider).searchProducts(trimmed);
+      if (mounted) {
+        setState(() => _searchResults = results.products);
+      }
+    } catch (_) {
+      if (mounted) {
+        setState(() => _searchResults = []);
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _searchLoading = false);
+      }
+    }
   }
 
   void _onSearchNavTap() {
@@ -145,11 +170,9 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
       _currentTab = 1;
       _searchActive = true;
     });
-    Future.delayed(Duration.zero, () =>
-      _searchController.selection = TextSelection.fromPosition(
-        TextPosition(offset: _searchController.text.length),
-      ),
-    );
+    if (_searchController.text.trim().isNotEmpty) {
+      _performSearch(_searchController.text);
+    }
   }
 
   void _onTabChanged(int i) {
@@ -314,7 +337,16 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
           SharedSearchBar(
             controller: _searchController,
             onChanged: _onSearchChanged,
-            onFocus: (active) => setState(() => _searchActive = active),
+            onSubmitted: (val) {
+              setState(() => _searchActive = true);
+              _performSearch(val);
+            },
+            onTap: () {
+              setState(() => _searchActive = true);
+              if (_searchController.text.trim().isNotEmpty) {
+                _performSearch(_searchController.text);
+              }
+            },
             padding: const EdgeInsets.symmetric(horizontal: 24),
             hintText: 'Search albums, merch, artists...',
           ),
@@ -393,55 +425,85 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   }
 
   Widget _buildSearchResults() {
-    return GestureDetector(
-      behavior: HitTestBehavior.opaque,
-      onTap: () => FocusScope.of(context).unfocus(),
-      child: SafeArea(
-        child: Column(
-          children: [
-            Padding(
-              padding: const EdgeInsets.fromLTRB(24, 8, 24, 0),
-              child: SharedSearchBar(
-                controller: _searchController,
-                onChanged: _onSearchChanged,
-                onFocus: (active) => setState(() => _searchActive = active),
-                autofocus: true,
-                padding: EdgeInsets.zero,
-                hintText: 'Search albums, merch, artists...',
-              ),
-            ),
-            const SizedBox(height: 12),
-            if (_searchLoading)
-              const Expanded(
-                child: Center(child: CircularProgressIndicator(color: AppColors.primary)),
-              )
-            else if (_searchResults.isEmpty && _searchController.text.trim().isNotEmpty)
-              Expanded(
-                child: Center(
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      const Icon(LucideIcons.searchX, size: 40, color: AppColors.onSurfaceVariant),
-                      const SizedBox(height: 12),
-                      Text(
-                        'No results for "${_searchController.text}"',
-                        style: const TextStyle(color: AppColors.onSurfaceVariant, fontSize: 14),
-                      ),
-                    ],
+    return SafeArea(
+      child: Column(
+        children: [
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 8, 24, 0),
+            child: Row(
+              children: [
+                IconButton(
+                  icon: const Icon(LucideIcons.arrowLeft, color: Colors.white),
+                  onPressed: () {
+                    FocusScope.of(context).unfocus();
+                    setState(() {
+                      _searchActive = false;
+                      _searchController.clear();
+                      _searchResults = [];
+                      _currentTab = 0;
+                    });
+                  },
+                ),
+                Expanded(
+                  child: SharedSearchBar(
+                    controller: _searchController,
+                    onChanged: _onSearchChanged,
+                    onSubmitted: (val) => _performSearch(val),
+                    autofocus: true,
+                    padding: EdgeInsets.zero,
+                    hintText: 'Search albums, merch, artists...',
                   ),
                 ),
-              )
-            else
-              Expanded(
-                child: ListView.builder(
-                  keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
-                  padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 8),
-                  itemCount: _searchResults.length,
-                  itemBuilder: (_, i) => SearchResultTile(product: _searchResults[i]),
+              ],
+            ),
+          ),
+          const SizedBox(height: 12),
+          if (_searchLoading)
+            const Expanded(
+              child: Center(child: CircularProgressIndicator(color: AppColors.primary)),
+            )
+          else if (_searchResults.isEmpty && _searchController.text.trim().isNotEmpty)
+            Expanded(
+              child: Center(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const Icon(LucideIcons.searchX, size: 40, color: AppColors.onSurfaceVariant),
+                    const SizedBox(height: 12),
+                    Text(
+                      'No results for "${_searchController.text}"',
+                      style: const TextStyle(color: AppColors.onSurfaceVariant, fontSize: 14),
+                    ),
+                  ],
                 ),
               ),
-          ],
-        ),
+            )
+          else if (_searchResults.isEmpty)
+            const Expanded(
+              child: Center(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(LucideIcons.search, size: 40, color: AppColors.onSurfaceVariant),
+                    SizedBox(height: 12),
+                    Text(
+                      'Type to search products, artists, or categories',
+                      style: TextStyle(color: AppColors.onSurfaceVariant, fontSize: 14),
+                    ),
+                  ],
+                ),
+              ),
+            )
+          else
+            Expanded(
+              child: ListView.builder(
+                keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
+                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 8),
+                itemCount: _searchResults.length,
+                itemBuilder: (_, i) => SearchResultTile(product: _searchResults[i]),
+              ),
+            ),
+        ],
       ),
     );
   }
