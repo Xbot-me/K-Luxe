@@ -15,6 +15,9 @@ import '../../features/order/repositories/order_repository.dart';
 import '../../features/auth/repositories/auth_repository.dart';
 import '../../core/network/api_exception.dart';
 import './services/shipping_service.dart';
+import './services/checkout_service.dart';
+import './widgets/checkout_loading_overlay.dart';
+import '../../shared/widgets/app_action_button.dart';
 import '../../shared/widgets/glass_container.dart';
 import 'payment/hosted_payment_screen.dart';
 
@@ -216,30 +219,35 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
       };
       final cartToken = ref.read(cartProvider.notifier).cartToken ?? '';
 
-      // ── COD / bKash (normal BFF flow) ──
+      // ── COD / bKash (isolated via CheckoutService with themed loading) ──
       if (_selectedPayment != PaymentMethod.card) {
-        final orderId = await ref.read(orderRepositoryProvider).placeOrder(
-          cartToken: cartToken,
-          billingAddress: billingAddress,
-          shippingAddress: shippingAddress,
-          paymentMethod: _selectedPayment.name,
+        final result = await CheckoutLoadingOverlay.show(
+          context: context,
+          task: () => CheckoutService.processOrder(
+            cartToken: cartToken,
+            billingAddress: billingAddress,
+            shippingAddress: shippingAddress,
+            paymentMethod: _selectedPayment.name,
+            items: ref.read(cartProvider),
+            total: total,
+            orderRepository: ref.read(orderRepositoryProvider),
+          ),
         );
-        _handleSuccessfulOrder(orderId);
+        if (!mounted) return;
+        _handleSuccessfulOrder(result);
         return;
       }
 
       // ── Card → Authorize.net Hosted Payment Flow ──
 
       // Step 1: Create session on BFF.
-      // We pass the billing address so the BFF can prefill Authorize.net's
-      // billTo fields. Without this the hosted page JS crashes on billTo = null.
       final billing = _buildBillingPayload(_selectedAddress);
 
       final sessionResponse = await ApiClient.post(
         ApiEndpoints.createPaymentSession,
         body: {
           'amount': total,
-          'billing': billing, // ← the fix: always send billing
+          'billing': billing,
         },
       );
 
@@ -250,15 +258,12 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
       if (!mounted) return;
 
       // Step 2: Open Authorize.net hosted page in an in-app WebView.
-      // We use flutter_inappwebview which handles Authorize.net's CSP correctly.
       final result = await Navigator.push<String>(
         context,
         MaterialPageRoute(
           builder: (_) => HostedPaymentScreen(
             hostedUrl: hostedUrl,
             paymentToken: paymentToken,
-            // Deep-link scheme that Authorize.net redirects to after payment.
-            // Configure this in AndroidManifest.xml & Info.plist too.
             redirectScheme: '',
           ),
         ),
@@ -267,28 +272,34 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
       if (!mounted) return;
 
       // Step 3: Handle WebView result
-      
-if (result == null || result == 'cancelled') {
-  ScaffoldMessenger.of(context).showSnackBar(
-    const SnackBar(
-      content: Text('Payment cancelled.'),
-      backgroundColor: Colors.orange,
-    ),
-  );
-  return;
-}
+      if (result == null || result == 'cancelled') {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Payment cancelled.'),
+            backgroundColor: Colors.orange,
+          ),
+        );
+        return;
+      }
 
-// Verify with BFF using the orderId we already have
-final verifyResponse = await ApiClient.get(
-  ApiEndpoints.verifyPayment,
-  queryParams: {'orderId': orderId},
-);
-final status = verifyResponse['status'] as String? ?? '';
-if (status == 'processing' || status == 'pending') {
-  _handleSuccessfulOrder(orderId);
-} else {
-  throw const ApiException('Payment verification failed.');
-}
+      // Verify with BFF using the orderId we already have
+      final verifyResponse = await ApiClient.get(
+        ApiEndpoints.verifyPayment,
+        queryParams: {'orderId': orderId},
+      );
+      final status = verifyResponse['status'] as String? ?? '';
+      if (status == 'processing' || status == 'pending') {
+        _handleSuccessfulOrder(
+          CheckoutResult(
+            orderId: orderId,
+            items: ref.read(cartProvider),
+            total: total,
+            paymentMethod: 'card',
+          ),
+        );
+      } else {
+        throw const ApiException('Payment verification failed.');
+      }
     } on ApiException catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
@@ -311,11 +322,17 @@ if (status == 'processing' || status == 'pending') {
     }
   }
 
-  void _handleSuccessfulOrder(String orderId) {
+  void _handleSuccessfulOrder(CheckoutResult result) {
     ref.read(cartProvider.notifier).clear();
     Navigator.pushAndRemoveUntil(
       context,
-      MaterialPageRoute(builder: (_) => OrderConfirmScreen(orderId: orderId)),
+      MaterialPageRoute(
+        builder: (_) => OrderConfirmScreen(
+          orderId: result.orderId,
+          items: result.items,
+          total: result.total,
+        ),
+      ),
       (route) => route.isFirst,
     );
   }
@@ -666,52 +683,13 @@ if (status == 'processing' || status == 'pending') {
         color: AppColors.background.withValues(alpha: 0.9),
         border: const Border(top: BorderSide(color: Colors.white10)),
       ),
-      child: GestureDetector(
-        onTap: isDisabled ? null : _placeOrder,
-        child: Container(
-          width: double.infinity,
-          padding: const EdgeInsets.symmetric(vertical: 20),
-          decoration: BoxDecoration(
-            gradient: isDisabled
-                ? LinearGradient(
-                    colors: [Colors.grey.shade800, Colors.grey.shade900])
-                : AppColors.primaryGradient,
-            borderRadius: BorderRadius.circular(20),
-            boxShadow: [
-              if (!isDisabled)
-                BoxShadow(
-                  color: AppColors.primary.withValues(alpha: 0.3),
-                  blurRadius: 20,
-                  offset: const Offset(0, 8),
-                ),
-            ],
-          ),
-          child: _isPlacingOrder
-              ? const Center(
-                  child: SizedBox(
-                    width: 24,
-                    height: 24,
-                    child: CircularProgressIndicator(
-                        color: Colors.white, strokeWidth: 2),
-                  ),
-                )
-              : Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    const Icon(LucideIcons.lock, color: Colors.white, size: 18),
-                    const SizedBox(width: 12),
-                    Text(
-                      'PAY ৳${total.toStringAsFixed(0)}',
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontWeight: FontWeight.bold,
-                        fontSize: 16,
-                        letterSpacing: 2.0,
-                      ),
-                    ),
-                  ],
-                ),
-        ).animate(target: _isPlacingOrder ? 0 : 1).shimmer(duration: 2.seconds),
+      child: AppActionButton(
+        onPressed: isDisabled ? null : () async => _placeOrder(),
+        enabled: !isDisabled,
+        label: 'PAY ৳${total.toStringAsFixed(0)}',
+        icon: LucideIcons.lock,
+        height: 56,
+        borderRadius: 20,
       ),
     );
   }
