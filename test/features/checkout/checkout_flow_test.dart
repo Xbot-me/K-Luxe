@@ -3,6 +3,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_application_1/features/checkout/widgets/checkout_loading_overlay.dart';
 import 'package:flutter_application_1/features/checkout/services/checkout_service.dart';
+import 'package:flutter_application_1/features/checkout/checkout_screen.dart';
 import 'package:flutter_application_1/features/order/order_confirm_screen.dart';
 import 'package:flutter_application_1/core/cart/cart_manager.dart';
 import 'package:flutter_application_1/features/product/models/product_model.dart';
@@ -121,6 +122,22 @@ void main() {
       expect(find.text('\$109.98'), findsOneWidget);
       expect(find.text('CONTINUE SHOPPING'), findsOneWidget);
       expect(find.text('VIEW ORDERS'), findsOneWidget);
+    });
+  });
+
+  group('CheckoutScreen Security Guard Tests', () {
+    testWidgets('shows empty cart guard and return button when cart is empty', (tester) async {
+      await tester.pumpWidget(
+        const ProviderScope(
+          child: MaterialApp(
+            home: CheckoutScreen(),
+          ),
+        ),
+      );
+
+      expect(find.text('Your Cart is Empty'), findsOneWidget);
+      expect(find.text('No items are currently pending checkout.'), findsOneWidget);
+      expect(find.text('RETURN TO HOME'), findsOneWidget);
     });
   });
 

@@ -14,6 +14,8 @@ import 'features/onboarding/onboarding_screen.dart';
 import 'features/product/models/product_model.dart';
 import 'features/product/product_detail_screen.dart';
 import 'features/product/widgets/product_detail_fetch_screen.dart';
+import 'features/order/order_confirm_screen.dart';
+import 'features/order/order_history_screen.dart';
 import 'features/profile/profile_screen.dart';
 import 'features/shop/shop_screen.dart';
 import 'features/splash/splash_screen.dart';
@@ -77,6 +79,18 @@ class _KLuxeAppState extends ConsumerState<KLuxeApp> {
         ),
         GoRoute(path: '/cart', builder: (_, __) => const CartScreen()),
         GoRoute(path: '/checkout', builder: (_, __) => const CheckoutScreen()),
+        GoRoute(
+          path: '/order-confirm',
+          builder: (_, state) {
+            final extra = state.extra as Map<String, dynamic>? ?? {};
+            return OrderConfirmScreen(
+              orderId: extra['orderId'] as String? ?? 'ORD',
+              items: extra['items'] as List<CartItem>?,
+              total: extra['total'] as double?,
+            );
+          },
+        ),
+        GoRoute(path: '/orders', builder: (_, __) => const OrderHistoryScreen()),
         GoRoute(path: '/profile', builder: (_, __) => const ProfileScreen()),
         GoRoute(path: '/shop', builder: (_, state) {
           final cat = state.uri.queryParameters['category'];

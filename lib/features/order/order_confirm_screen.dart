@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 import '../../core/cart/cart_manager.dart';
 import '../../core/theme/theme_provider.dart';
@@ -110,11 +111,7 @@ class _OrderConfirmScreenState extends ConsumerState<OrderConfirmScreen>
       canPop: false,
       onPopInvokedWithResult: (didPop, _) {
         if (!didPop) {
-          Navigator.pushAndRemoveUntil(
-            context,
-            MaterialPageRoute(builder: (_) => const HomeScreen()),
-            (route) => false,
-          );
+          context.go('/home');
         }
       },
       child: Scaffold(
@@ -474,11 +471,7 @@ class _OrderConfirmScreenState extends ConsumerState<OrderConfirmScreen>
           AppActionButton(
             onPressed: () async {
               HapticFeedback.lightImpact();
-              Navigator.pushAndRemoveUntil(
-                context,
-                MaterialPageRoute(builder: (_) => const HomeScreen()),
-                (route) => false,
-              );
+              context.go('/home');
             },
             label: 'CONTINUE SHOPPING',
             icon: LucideIcons.shoppingBag,
@@ -493,10 +486,7 @@ class _OrderConfirmScreenState extends ConsumerState<OrderConfirmScreen>
           GestureDetector(
             onTap: () {
               HapticFeedback.lightImpact();
-              Navigator.pushReplacement(
-                context,
-                MaterialPageRoute(builder: (_) => const OrderHistoryScreen()),
-              );
+              context.push('/orders');
             },
             child: Container(
               height: 52,

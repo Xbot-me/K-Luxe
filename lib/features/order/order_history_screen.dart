@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import '../../core/theme/app_colors.dart';
 //import '../../core/constants/dummy_data.dart';
 import '../../shared/widgets/status_badge.dart';
@@ -55,7 +56,13 @@ class _OrderHistoryScreenState extends ConsumerState<OrderHistoryScreen> {
         title: const Text('My Orders'),
         leading: IconButton(
           icon: const Icon(Icons.arrow_back_ios_new, size: 18),
-          onPressed: () => Navigator.pop(context),
+          onPressed: () {
+            if (context.canPop()) {
+              context.pop();
+            } else {
+              context.go('/home');
+            }
+          },
         ),
         // Refresh button
         actions: [

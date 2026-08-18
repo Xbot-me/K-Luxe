@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 
@@ -63,11 +64,16 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
     _selectedAddressId = _addresses
         .firstWhere((a) => a.isDefault, orElse: () => _addresses.first)
         .id;
-    _fetchShippingRates(_selectedAddressId);
+    if (ref.read(cartProvider).isNotEmpty) {
+      _fetchShippingRates(_selectedAddressId);
+    }
   }
 
   // ── 1. Fetch rates based on address ──
   Future<void> _fetchShippingRates(String addressId) async {
+    final token = ref.read(cartProvider.notifier).cartToken;
+    if (token == null) return;
+
     setState(() {
       _isLoadingRates = true;
       _selectedRate = null;
@@ -77,7 +83,7 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
     try {
       final rates = await _shippingService.getRates(
         addressId: addressId,
-        cartToken: ref.read(cartProvider.notifier).cartToken!,
+        cartToken: token,
       );
       if (!mounted) return;
       setState(() => _availableRates = rates);
@@ -324,21 +330,90 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
 
   void _handleSuccessfulOrder(CheckoutResult result) {
     ref.read(cartProvider.notifier).clear();
-    Navigator.pushAndRemoveUntil(
-      context,
-      MaterialPageRoute(
-        builder: (_) => OrderConfirmScreen(
-          orderId: result.orderId,
-          items: result.items,
-          total: result.total,
-        ),
-      ),
-      (route) => route.isFirst,
-    );
+    if (mounted) {
+      context.go(
+        '/order-confirm',
+        extra: {
+          'orderId': result.orderId,
+          'items': result.items,
+          'total': result.total,
+        },
+      );
+    }
   }
 
   @override
   Widget build(BuildContext context) {
+    final cartItems = ref.watch(cartProvider);
+
+    // Security guard: If the cart is empty and an order is not in progress, prevent viewing/re-ordering
+    if (cartItems.isEmpty && !_isPlacingOrder) {
+      return Scaffold(
+        backgroundColor: AppColors.background,
+        appBar: AppBar(
+          backgroundColor: Colors.transparent,
+          elevation: 0,
+          leading: IconButton(
+            icon: const Icon(LucideIcons.arrowLeft, color: Colors.white),
+            onPressed: () => context.go('/home'),
+          ),
+          title: const Text('CHECKOUT'),
+          centerTitle: true,
+        ),
+        body: SafeArea(
+          child: Center(
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 32),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Container(
+                    width: 72,
+                    height: 72,
+                    decoration: BoxDecoration(
+                      color: Colors.white.withValues(alpha: 0.05),
+                      shape: BoxShape.circle,
+                    ),
+                    child: const Icon(
+                      LucideIcons.shoppingBag,
+                      size: 32,
+                      color: AppColors.onSurfaceVariant,
+                    ),
+                  ),
+                  const SizedBox(height: 20),
+                  const Text(
+                    'Your Cart is Empty',
+                    style: TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.w700,
+                      color: Colors.white,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  const Text(
+                    'No items are currently pending checkout.',
+                    textAlign: TextAlign.center,
+                    style: TextStyle(
+                      fontSize: 13,
+                      color: AppColors.onSurfaceVariant,
+                    ),
+                  ),
+                  const SizedBox(height: 28),
+                  AppActionButton(
+                    onPressed: () async => context.go('/home'),
+                    label: 'RETURN TO HOME',
+                    icon: LucideIcons.home,
+                    height: 50,
+                    borderRadius: 16,
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      );
+    }
+
     return Scaffold(
       backgroundColor: AppColors.background,
       appBar: AppBar(
@@ -346,7 +421,13 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
         elevation: 0,
         leading: IconButton(
           icon: const Icon(LucideIcons.arrowLeft, color: Colors.white),
-          onPressed: () => Navigator.pop(context),
+          onPressed: () {
+            if (context.canPop()) {
+              context.pop();
+            } else {
+              context.go('/home');
+            }
+          },
         ),
         title: Text(
           'CHECKOUT',
