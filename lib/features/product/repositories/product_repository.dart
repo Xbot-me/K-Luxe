@@ -3,6 +3,7 @@ import '../../../core/cache/local_cache_service.dart';
 import '../../../core/network/api_client.dart';
 import '../../../core/network/api_endpoints.dart';
 import '../models/product_model.dart';
+import '../models/trending_search.dart';
 
 // ─── Response Models ──────────────────────────────────────────────────────────
 
@@ -295,4 +296,64 @@ class ProductRepository {
       serializer: (result) => result.toJson(),
     );
   }
+
+  // ── GET /api/products/search/trending?timeframe= ──────────────────────────
+  /// Trending searches segmented by timeframe with SWR cache.
+  Future<List<TrendingItem>> getTrendingSearches(TrendingTimeframe timeframe) async {
+    final cacheKey = 'trending_${timeframe.apiValue}';
+
+    return _cache.fetchWithSWR<List<TrendingItem>>(
+      boxName: LocalCacheService.boxProductLists,
+      key: cacheKey,
+      ttl: const Duration(minutes: 5),
+      networkFetcher: () async {
+        try {
+          final data = await ApiClient.get(
+            ApiEndpoints.trendingSearches,
+            queryParams: {'timeframe': timeframe.apiValue},
+          );
+          final rawList = data['results'] as List<dynamic>? ?? [];
+          if (rawList.isEmpty) return _fallbackTrending[timeframe] ?? [];
+          return rawList
+              .whereType<Map<dynamic, dynamic>>()
+              .map((e) => TrendingItem.fromJson(Map<String, dynamic>.from(e)))
+              .toList();
+        } catch (_) {
+          return _fallbackTrending[timeframe] ?? [];
+        }
+      },
+      deserializer: (data) => (data as List)
+          .whereType<Map<dynamic, dynamic>>()
+          .map((e) => TrendingItem.fromJson(Map<String, dynamic>.from(e)))
+          .toList(),
+      serializer: (items) => items.map((e) => e.toJson()).toList(),
+    );
+  }
+
+  static const Map<TrendingTimeframe, List<TrendingItem>> _fallbackTrending = {
+    TrendingTimeframe.recent: [
+      TrendingItem(query: 'BORN PINK Vinyl', rank: 1, isHot: true, tag: '🔥 TRENDING', category: 'Albums'),
+      TrendingItem(query: 'Official Lightstick V2', rank: 2, isHot: true, tag: '+45%', category: 'Gear'),
+      TrendingItem(query: 'Aespa Armageddon', rank: 3, isHot: true, tag: 'NEW', category: 'Albums'),
+      TrendingItem(query: 'NewJeans Bunny Bag', rank: 4, isHot: false, tag: '+28%', category: 'Merch'),
+      TrendingItem(query: 'Stray Kids 5-STAR Limited', rank: 5, isHot: false, category: 'Albums'),
+      TrendingItem(query: 'SEVENTEEN FML Carat', rank: 6, isHot: false, category: 'Albums'),
+    ],
+    TrendingTimeframe.daily: [
+      TrendingItem(query: 'Official Lightstick V2', rank: 1, isHot: true, tag: '#1 TODAY', category: 'Gear'),
+      TrendingItem(query: 'Special Album Dawn/Dusk', rank: 2, isHot: true, tag: 'BEST SELLER', category: 'Albums'),
+      TrendingItem(query: 'BTS World Tour Hoodie', rank: 3, isHot: false, tag: '+32%', category: 'Apparel'),
+      TrendingItem(query: 'Photocard Binder 9-Pocket', rank: 4, isHot: false, category: 'Accessories'),
+      TrendingItem(query: 'IVE SWITCH Photobook', rank: 5, isHot: false, category: 'Albums'),
+      TrendingItem(query: 'TXT Minisode 3', rank: 6, isHot: false, category: 'Albums'),
+    ],
+    TrendingTimeframe.monthly: [
+      TrendingItem(query: 'Official Lightstick V2', rank: 1, isHot: true, tag: 'TOP 1', category: 'Gear'),
+      TrendingItem(query: 'Photocard Collection Set', rank: 2, isHot: true, tag: 'POPULAR', category: 'Accessories'),
+      TrendingItem(query: 'Special Album Dawn/Dusk', rank: 3, isHot: false, tag: 'CLASSIC', category: 'Albums'),
+      TrendingItem(query: 'World Tour Oversized Hoodie', rank: 4, isHot: false, category: 'Apparel'),
+      TrendingItem(query: 'Vinyl LP Gatefold Edition', rank: 5, isHot: false, category: 'Albums'),
+      TrendingItem(query: 'Acrylic Standee & Keychain', rank: 6, isHot: false, category: 'Merch'),
+    ],
+  };
 }

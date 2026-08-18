@@ -48,5 +48,6 @@ class ApiEndpoints {
   static String get categories      => '$baseUrl/products/categories';
   static String get featuredProducts => '$baseUrl/products/featured';
   static String get searchProducts  => '$baseUrl/products/search';
+  static String get trendingSearches => '$baseUrl/products/search/trending';
   static String get tenantConfig    => '$baseUrl/tenant-config';
 }

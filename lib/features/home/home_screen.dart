@@ -22,6 +22,8 @@ import '../profile/profile_screen.dart';
 
 // Store
 import 'store/recently_viewed_store.dart';
+import 'store/search_history_store.dart';
+import '../product/models/trending_search.dart';
 
 // Widgets
 import 'widgets/hero_banner.dart';
@@ -35,6 +37,7 @@ import '../../shared/widgets/shared_product_card.dart';
 import 'widgets/best_sellers_grid.dart';
 import 'widgets/recently_viewed_card.dart';
 import 'widgets/search_result_tile.dart';
+import 'widgets/search_discovery_view.dart';
 import 'widgets/home_skeleton.dart';
 import 'widgets/bottom_nav.dart';
 
@@ -44,6 +47,7 @@ import '../notifications/notification_sheet.dart';
 import '../notifications/store/notification_store.dart';
 
 export 'store/recently_viewed_store.dart';
+export 'store/search_history_store.dart';
 
 
 
@@ -74,11 +78,20 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   bool _searchLoading = false;
   Timer? _searchDebounce;
 
+  // ── Trending / Popular Searches ──
+  TrendingTimeframe _trendingTimeframe = TrendingTimeframe.recent;
+  List<TrendingItem> _trendingItems = [];
+  bool _trendingLoading = false;
+
   @override
   void initState() {
     super.initState();
     _loadCategories();
     _loadProducts();
+    SearchHistoryStore.load().then((_) {
+      if (mounted) setState(() {});
+    });
+    _loadTrendingSearches();
   }
 
   @override
@@ -89,6 +102,24 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   }
 
   // ── Data loading ──────────────────────────────────────────────────────────
+  Future<void> _loadTrendingSearches([TrendingTimeframe? tf]) async {
+    final target = tf ?? _trendingTimeframe;
+    setState(() {
+      _trendingTimeframe = target;
+      _trendingLoading = true;
+    });
+    try {
+      final items = await ref
+          .read(productRepositoryProvider)
+          .getTrendingSearches(target);
+      if (mounted) setState(() => _trendingItems = items);
+    } catch (_) {
+      if (mounted) setState(() => _trendingItems = []);
+    } finally {
+      if (mounted) setState(() => _trendingLoading = false);
+    }
+  }
+
   Future<void> _loadCategories() async {
     try {
       final cats = await ref.read(productRepositoryProvider).getCategories();
@@ -146,6 +177,10 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
       });
       return;
     }
+
+    SearchHistoryStore.add(trimmed).then((_) {
+      if (mounted) setState(() {});
+    });
 
     setState(() => _searchLoading = true);
     try {
@@ -425,6 +460,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   }
 
   Widget _buildSearchResults() {
+    final queryText = _searchController.text.trim();
+
     return SafeArea(
       child: Column(
         children: [
@@ -462,7 +499,29 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
             const Expanded(
               child: Center(child: CircularProgressIndicator(color: AppColors.primary)),
             )
-          else if (_searchResults.isEmpty && _searchController.text.trim().isNotEmpty)
+          else if (queryText.isEmpty)
+            Expanded(
+              child: SearchDiscoveryView(
+                recentSearches: SearchHistoryStore.history,
+                selectedTimeframe: _trendingTimeframe,
+                trendingItems: _trendingItems,
+                isTrendingLoading: _trendingLoading,
+                onTimeframeChanged: (tf) => _loadTrendingSearches(tf),
+                onSelectQuery: (q) {
+                  _searchController.text = q;
+                  _performSearch(q);
+                },
+                onRemoveRecent: (q) async {
+                  await SearchHistoryStore.remove(q);
+                  if (mounted) setState(() {});
+                },
+                onClearRecent: () async {
+                  await SearchHistoryStore.clear();
+                  if (mounted) setState(() {});
+                },
+              ),
+            )
+          else if (_searchResults.isEmpty)
             Expanded(
               child: Center(
                 child: Column(
@@ -471,24 +530,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                     const Icon(LucideIcons.searchX, size: 40, color: AppColors.onSurfaceVariant),
                     const SizedBox(height: 12),
                     Text(
-                      'No results for "${_searchController.text}"',
+                      'No results for "$queryText"',
                       style: const TextStyle(color: AppColors.onSurfaceVariant, fontSize: 14),
-                    ),
-                  ],
-                ),
-              ),
-            )
-          else if (_searchResults.isEmpty)
-            const Expanded(
-              child: Center(
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Icon(LucideIcons.search, size: 40, color: AppColors.onSurfaceVariant),
-                    SizedBox(height: 12),
-                    Text(
-                      'Type to search products, artists, or categories',
-                      style: TextStyle(color: AppColors.onSurfaceVariant, fontSize: 14),
                     ),
                   ],
                 ),
