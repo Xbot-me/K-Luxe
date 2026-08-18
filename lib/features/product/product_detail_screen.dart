@@ -43,6 +43,15 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen>
   void initState() {
     super.initState();
 
+    _activeImageUrl = widget.product.displayImageUrl;
+
+    // Pre-seed available options from initial product model if present
+    for (final attr in widget.product.variationAttributes) {
+      if (attr.options.isNotEmpty && !_selectedOptions.containsKey(attr.key)) {
+        _selectedOptions[attr.key] = attr.options.first;
+      }
+    }
+
     _barController = AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: 600),
@@ -51,6 +60,7 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen>
       CurvedAnimation(parent: _barController, curve: Curves.easeOutCubic),
     );
     _barFade = CurvedAnimation(parent: _barController, curve: Curves.easeOut);
+    _barController.forward();
 
     _loadFullProduct();
   }

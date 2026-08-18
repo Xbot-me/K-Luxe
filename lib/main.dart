@@ -5,6 +5,7 @@ import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'core/cart/cart_manager.dart';
+import 'core/cache/local_cache_service.dart';
 import 'core/theme/theme_provider.dart';
 import 'features/cart/cart_screen.dart';
 import 'features/checkout/checkout_screen.dart';
@@ -35,6 +36,7 @@ void main() async {
   };
 
   await dotenv.load(fileName: ".env");
+  await LocalCacheService.init();
 
   final container = ProviderContainer();
   await container.read(cartProvider.notifier).initCart();

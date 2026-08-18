@@ -55,6 +55,17 @@ class ProductVariant {
       selectedOptions: options,
     );
   }
+
+  Map<String, dynamic> toJson() => {
+    'id': id,
+    if (sku != null) 'sku': sku,
+    'price': price,
+    'regularPrice': regularPrice,
+    'stockStatus': stockStatus,
+    if (stockQuantity != null) 'stockQuantity': stockQuantity,
+    'selectedOptions': selectedOptions,
+    if (image != null) 'image': image!.toJson(),
+  };
 }
 
 class ProductAttribute {
@@ -72,7 +83,7 @@ class ProductAttribute {
 
   factory ProductAttribute.fromJson(Map<String, dynamic> j) {
     final name = j['name'] as String;
-    final rawOptions = j['values'] as List<dynamic>? ?? [];
+    final rawOptions = (j['values'] ?? j['options']) as List<dynamic>? ?? [];
     return ProductAttribute(
       name: name,
       key: (j['key'] as String? ?? name).toLowerCase(), 
@@ -80,6 +91,13 @@ class ProductAttribute {
       usedForVariations: j['usedForVariations'] as bool? ?? true,
     );
   }
+
+  Map<String, dynamic> toJson() => {
+    'name': name,
+    'key': key,
+    'values': options,
+    'usedForVariations': usedForVariations,
+  };
 }
 
 class ProductImage {
@@ -90,10 +108,16 @@ class ProductImage {
   const ProductImage({required this.id, required this.url, required this.alt});
 
   factory ProductImage.fromJson(Map<String, dynamic> j) => ProductImage(
-    id: j['id'] as String,
-    url: j['url'] as String,
+    id: (j['id'] ?? '').toString(),
+    url: j['url'] as String? ?? '',
     alt: j['alt'] as String? ?? '',
   );
+
+  Map<String, dynamic> toJson() => {
+    'id': id,
+    'url': url,
+    'alt': alt,
+  };
 }
 
 class PriceRange {
@@ -106,6 +130,11 @@ class PriceRange {
     min: (j['min'] as num).toDouble(),
     max: (j['max'] as num).toDouble(),
   );
+
+  Map<String, dynamic> toJson() => {
+    'min': min,
+    'max': max,
+  };
 }
 
 // Product type matches WooCommerce types your BFF already returns
@@ -261,4 +290,26 @@ class Product {
           .toList(),
     );
   }
+
+  Map<String, dynamic> toJson() => {
+    'id': id,
+    'slug': slug,
+    'name': name,
+    'type': type.name,
+    'price': price,
+    'regularPrice': regularPrice,
+    if (priceRange != null) 'priceRange': priceRange!.toJson(),
+    'onSale': onSale,
+    'stockStatus': stockStatus,
+    if (stockQuantity != null) 'stockQuantity': stockQuantity,
+    'featuredImage': featuredImage.toJson(),
+    'category': category,
+    'averageRating': averageRating,
+    if (description != null) 'description': description,
+    if (shortDescription != null) 'shortDescription': shortDescription,
+    if (artist != null) 'artist': artist,
+    'images': images.map((e) => e.toJson()).toList(),
+    'variants': variants.map((e) => e.toJson()).toList(),
+    'attributes': attributes.map((e) => e.toJson()).toList(),
+  };
 }
