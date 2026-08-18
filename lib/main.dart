@@ -2,22 +2,21 @@ import 'dart:ui';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'core/theme/app_theme.dart';
-import 'features/splash/splash_screen.dart';
-import 'features/onboarding/onboarding_screen.dart';
-import 'features/home/home_screen.dart';
-import 'features/product/product_detail_screen.dart';
+import 'core/cart/cart_manager.dart';
+import 'core/theme/theme_provider.dart';
 import 'features/cart/cart_screen.dart';
 import 'features/checkout/checkout_screen.dart';
-import 'features/profile/profile_screen.dart';
+import 'features/home/home_screen.dart';
+import 'features/onboarding/onboarding_screen.dart';
 import 'features/product/models/product_model.dart';
-import 'core/cart/cart_manager.dart';
+import 'features/product/product_detail_screen.dart';
 import 'features/product/widgets/product_detail_fetch_screen.dart';
+import 'features/profile/profile_screen.dart';
 import 'features/shop/shop_screen.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'features/splash/splash_screen.dart';
 
-// main.dart
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   
@@ -39,19 +38,21 @@ void main() async {
 
   final container = ProviderContainer();
   await container.read(cartProvider.notifier).initCart();
+
   runApp(UncontrolledProviderScope(
     container: container,
     child: const KLuxeApp(),
   ));
 }
 
-class KLuxeApp extends StatefulWidget {
+class KLuxeApp extends ConsumerStatefulWidget {
   const KLuxeApp({super.key});
+
   @override
-  State<KLuxeApp> createState() => _KLuxeAppState();
+  ConsumerState<KLuxeApp> createState() => _KLuxeAppState();
 }
 
-class _KLuxeAppState extends State<KLuxeApp> {
+class _KLuxeAppState extends ConsumerState<KLuxeApp> {
   late final GoRouter _router;
 
   @override
@@ -68,9 +69,8 @@ class _KLuxeAppState extends State<KLuxeApp> {
           builder: (context, state) {
             final product = state.extra as Product?;
             final id = state.pathParameters['id']!;
-            // If extra is missing (deep link / hot restart), fetch by ID
             if (product != null) return ProductDetailScreen(product: product);
-            return ProductDetailFetchScreen(id: id); // see note below
+            return ProductDetailFetchScreen(id: id);
           },
         ),
         GoRoute(path: '/cart', builder: (_, __) => const CartScreen()),
@@ -86,12 +86,14 @@ class _KLuxeAppState extends State<KLuxeApp> {
 
   @override
   Widget build(BuildContext context) {
+    final dynamicTheme = ref.watch(appThemeDataProvider);
+    final branding = ref.watch(tenantBrandingProvider);
+
     return MaterialApp.router(
-      title: 'K-LUXE',
+      title: branding.appTitle,
       debugShowCheckedModeBanner: false,
-      theme: AppTheme.darkTheme,
+      theme: dynamicTheme,
       routerConfig: _router,
     );
   }
 }
-

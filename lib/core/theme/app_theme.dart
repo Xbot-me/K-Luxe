@@ -1,81 +1,158 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import '../tenant/tenant_model.dart';
 import 'app_colors.dart';
 
 class AppTheme {
-  static ThemeData get darkTheme {
+  AppTheme._();
+
+  /// Resolves the primary typography font family dynamically
+  static TextStyle Function({
+    TextStyle? textStyle,
+    Color? color,
+    Color? backgroundColor,
+    double? fontSize,
+    FontWeight? fontWeight,
+    FontStyle? fontStyle,
+    double? letterSpacing,
+    double? wordSpacing,
+    TextBaseline? textBaseline,
+    double? height,
+    Locale? locale,
+    Paint? foreground,
+    Paint? background,
+    List<Shadow>? shadows,
+    List<FontFeature>? fontFeatures,
+    TextDecoration? decoration,
+    Color? decorationColor,
+    TextDecorationStyle? decorationStyle,
+    double? decorationThickness,
+  }) _getFontBuilder(String family) {
+    switch (family.toLowerCase().replaceAll(' ', '')) {
+      case 'cinzel':
+        return GoogleFonts.cinzel;
+      case 'playfairdisplay':
+      case 'playfair':
+        return GoogleFonts.playfairDisplay;
+      case 'montserrat':
+        return GoogleFonts.montserrat;
+      case 'spacegrotesk':
+        return GoogleFonts.spaceGrotesk;
+      case 'inter':
+      default:
+        return GoogleFonts.inter;
+    }
+  }
+
+  /// Builds a dynamic ThemeData instance parameterized by the active tenant config
+  static ThemeData buildDynamicTheme(TenantConfig config) {
+    final branding = config.branding;
+    final primary = branding.primaryColor;
+    final secondary = branding.secondaryColor;
+    final background = branding.backgroundColor;
+    final surface = branding.surfaceColor;
+    final text = branding.textColor;
+
+    final isDark = background.computeLuminance() < 0.5;
+    final onPrimary = primary.computeLuminance() > 0.5 ? Colors.black : Colors.white;
+    final onSecondary = secondary.computeLuminance() > 0.5 ? Colors.black : Colors.white;
+
+    final fontBuilder = _getFontBuilder(branding.fontFamily);
+    final radius = BorderRadius.circular(branding.borderRadius);
+
+    final colorScheme = isDark
+        ? ColorScheme.dark(
+            primary: primary,
+            onPrimary: onPrimary,
+            secondary: secondary,
+            onSecondary: onSecondary,
+            surface: surface,
+            onSurface: text,
+            onSurfaceVariant: text.withValues(alpha: 0.7),
+            error: AppColors.error,
+          )
+        : ColorScheme.light(
+            primary: primary,
+            onPrimary: onPrimary,
+            secondary: secondary,
+            onSecondary: onSecondary,
+            surface: surface,
+            onSurface: text,
+            onSurfaceVariant: text.withValues(alpha: 0.7),
+            error: AppColors.error,
+          );
+
     return ThemeData(
       useMaterial3: true,
-      brightness: Brightness.dark,
-      colorScheme: const ColorScheme.dark(
-        primary: AppColors.primary,
-        onPrimary: AppColors.onPrimary,
-        secondary: AppColors.secondary,
-        onSecondary: AppColors.onSecondary,
-        surface: AppColors.surface,
-        onSurface: AppColors.onSurface,
-        onSurfaceVariant: AppColors.onSurfaceVariant,
-        error: AppColors.error,
-      ),
-      scaffoldBackgroundColor: AppColors.background,
+      brightness: isDark ? Brightness.dark : Brightness.light,
+      colorScheme: colorScheme,
+      scaffoldBackgroundColor: background,
       textTheme: GoogleFonts.interTextTheme().copyWith(
-        displayLarge: GoogleFonts.montserrat(
+        displayLarge: fontBuilder(
           fontSize: 32,
           fontWeight: FontWeight.bold,
           letterSpacing: -1.0,
-          color: AppColors.onSurface,
+          color: text,
         ),
-        displayMedium: GoogleFonts.montserrat(
+        displayMedium: fontBuilder(
           fontSize: 24,
           fontWeight: FontWeight.bold,
           letterSpacing: -0.5,
-          color: AppColors.onSurface,
+          color: text,
         ),
-        titleLarge: GoogleFonts.inter(
+        titleLarge: fontBuilder(
           fontSize: 18,
           fontWeight: FontWeight.w600,
-          color: AppColors.onSurface,
+          color: text,
         ),
         bodyLarge: GoogleFonts.inter(
           fontSize: 16,
-          color: AppColors.onSurface,
+          color: text,
         ),
         bodyMedium: GoogleFonts.inter(
           fontSize: 14,
-          color: AppColors.onSurfaceVariant,
+          color: text.withValues(alpha: 0.7),
         ),
-        labelLarge: GoogleFonts.montserrat(
+        labelLarge: fontBuilder(
           fontSize: 12,
           fontWeight: FontWeight.bold,
           letterSpacing: 2.0,
-          color: AppColors.primary,
+          color: primary,
         ),
       ),
-      appBarTheme: const AppBarTheme(
+      appBarTheme: AppBarTheme(
         backgroundColor: Colors.transparent,
         elevation: 0,
         centerTitle: true,
-        titleTextStyle: TextStyle(
+        titleTextStyle: fontBuilder(
           fontSize: 20,
           fontWeight: FontWeight.bold,
-          color: AppColors.onSurface,
+          color: text,
           letterSpacing: 2.0,
         ),
       ),
+      cardTheme: CardThemeData(
+        color: surface,
+        elevation: 0,
+        shape: RoundedRectangleBorder(borderRadius: radius),
+      ),
       elevatedButtonTheme: ElevatedButtonThemeData(
         style: ElevatedButton.styleFrom(
-          backgroundColor: AppColors.primary,
-          foregroundColor: AppColors.onPrimary,
-          textStyle: GoogleFonts.montserrat(
+          backgroundColor: primary,
+          foregroundColor: onPrimary,
+          textStyle: fontBuilder(
             fontWeight: FontWeight.bold,
             letterSpacing: 1.2,
           ),
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(16),
+            borderRadius: radius,
           ),
           padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 32),
         ),
       ),
     );
   }
+
+  /// Default static dark theme
+  static ThemeData get darkTheme => buildDynamicTheme(TenantConfig.defaultTenant);
 }
