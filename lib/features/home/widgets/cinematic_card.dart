@@ -4,6 +4,7 @@ import 'package:lucide_icons_flutter/lucide_icons.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../product/models/product_model.dart';
 import '../store/recently_viewed_store.dart';
+import '../../../shared/widgets/app_cached_image.dart';
 import '../../../shared/widgets/press_scale.dart';
 class CinematicCard extends StatelessWidget {
   final Product product;
@@ -27,18 +28,11 @@ class CinematicCard extends StatelessWidget {
                 // Hero wraps the image so detail screen transition is smooth
                 Hero(
                   tag: 'product-image-${product.id}',
-                  child: Image.network(
-                    product.displayImageUrl,
+                  child: AppCachedImage(
+                    imageUrl: product.displayImageUrl,
                     fit: BoxFit.cover,
-                    errorBuilder: (_, __, ___) => Container(
-                      color: AppColors.surface,
-                      child: const Center(
-                        child: Icon(
-                          LucideIcons.imageOff,
-                          color: AppColors.onSurfaceVariant,
-                        ),
-                      ),
-                    ),
+                    memCacheWidth: 600,
+                    memCacheHeight: 600,
                   ),
                 ),
                 Container(

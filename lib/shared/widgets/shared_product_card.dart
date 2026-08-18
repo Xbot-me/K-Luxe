@@ -8,6 +8,7 @@ import '../../core/utils/alert_service.dart';
 import '../../features/product/models/product_model.dart';
 import '../../features/home/store/recently_viewed_store.dart';
 import '../../features/home/widgets/bottom_sheet.dart';
+import 'app_cached_image.dart';
 
 enum ProductCardVariant {
   /// Used in Shop Screen (liquid width grid, add to cart top right)
@@ -312,13 +313,11 @@ class SharedProductCard extends ConsumerWidget {
       colorFilter: _isSoldOut
           ? ColorFilter.mode(Colors.black.withValues(alpha: 0.45), BlendMode.darken)
           : const ColorFilter.mode(Colors.transparent, BlendMode.multiply),
-      child: Image.network(
-        product.displayImageUrl,
+      child: AppCachedImage(
+        imageUrl: product.displayImageUrl,
         fit: BoxFit.cover,
-        errorBuilder: (_, __, ___) => Container(
-          color: AppColors.background,
-          child: const Center(child: Icon(LucideIcons.imageOff, color: AppColors.onSurfaceVariant)),
-        ),
+        memCacheWidth: 400,
+        memCacheHeight: 400,
       ),
     );
   }

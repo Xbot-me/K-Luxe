@@ -3,6 +3,8 @@ import 'package:go_router/go_router.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../product/models/product_model.dart';
 
+import '../../../shared/widgets/app_cached_image.dart';
+
 class RecentlyViewedCard extends StatelessWidget {
   final Product product;
   const RecentlyViewedCard({super.key, required this.product});
@@ -17,14 +19,14 @@ class RecentlyViewedCard extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            ClipRRect(
+            AppCachedImage(
+              imageUrl: product.displayImageUrl,
+              width: 110,
+              height: 110,
+              fit: BoxFit.cover,
               borderRadius: BorderRadius.circular(10),
-              child: Image.network(
-                product.displayImageUrl,
-                width: 110,
-                height: 110,
-                fit: BoxFit.cover,
-              ),
+              memCacheWidth: 220,
+              memCacheHeight: 220,
             ),
             const SizedBox(height: 6),
             Text(

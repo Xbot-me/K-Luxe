@@ -4,6 +4,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/cart/cart_manager.dart';
 import 'models/product_model.dart';
 import 'repositories/product_repository.dart';
+import '../../shared/widgets/app_cached_image.dart';
+import '../../shared/widgets/app_action_button.dart';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Drop-in replacement for the old ProductDetailScreen.
@@ -213,16 +215,14 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen>
                         opacity: animation,
                         child: child,
                       ),
-                      child: Image.network(
-                        heroUrl,
+                      child: AppCachedImage(
                         key: ValueKey(heroUrl),
+                        imageUrl: heroUrl,
                         fit: BoxFit.cover,
                         width: double.infinity,
                         height: double.infinity,
-                        loadingBuilder: (ctx, child, prog) {
-                          if (prog == null) return child;
-                          return Container(color: _AppTokens.surface);
-                        },
+                        memCacheWidth: 800,
+                        memCacheHeight: 800,
                       ),
                     ),
                   ),
@@ -538,14 +538,14 @@ class _VariantThumbnailStrip extends StatelessWidget {
                 ),
               ],
             ),
-            child: ClipRRect(
+            child: AppCachedImage(
+              imageUrl: url,
+              fit: BoxFit.cover,
+              width: 44,
+              height: 44,
               borderRadius: BorderRadius.circular(9),
-              child: Image.network(
-                url,
-                fit: BoxFit.cover,
-                width: 44,
-                height: 44,
-              ),
+              memCacheWidth: 100,
+              memCacheHeight: 100,
             ),
           ),
         );
@@ -1310,48 +1310,15 @@ class _BottomBar extends StatelessWidget {
             const SizedBox(width: 20),
             // CTA button
             Expanded(
-              child: GestureDetector(
-                onTap: canAdd ? onAddToCart : null,
-                child: AnimatedContainer(
-                  duration: const Duration(milliseconds: 200),
-                  height: 52,
-                  decoration: BoxDecoration(
-                    color: canAdd ? _AppTokens.gold : _AppTokens.surface2,
-                    borderRadius: BorderRadius.circular(16),
-                    border: Border.all(
-                      color: canAdd
-                          ? _AppTokens.gold
-                          : _AppTokens.border,
-                      width: 0.5,
-                    ),
-                  ),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Icon(
-                        canAdd
-                            ? Icons.shopping_bag_outlined
-                            : Icons.block_rounded,
-                        size: 16,
-                        color: canAdd
-                            ? _AppTokens.bg
-                            : _AppTokens.textHint,
-                      ),
-                      const SizedBox(width: 8),
-                      Text(
-                        label.toUpperCase(),
-                        style: TextStyle(
-                          fontSize: 12,
-                          fontWeight: FontWeight.w700,
-                          letterSpacing: 1.5,
-                          color: canAdd
-                              ? _AppTokens.bg
-                              : _AppTokens.textHint,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
+              child: AppActionButton(
+                onPressed: canAdd ? () async => onAddToCart() : null,
+                enabled: canAdd,
+                backgroundColor: _AppTokens.gold,
+                foregroundColor: _AppTokens.bg,
+                label: label.toUpperCase(),
+                icon: canAdd ? Icons.shopping_bag_outlined : Icons.block_rounded,
+                height: 52,
+                borderRadius: 16,
               ),
             ),
           ],

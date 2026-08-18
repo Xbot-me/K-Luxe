@@ -168,13 +168,16 @@ class _ShopScreenState extends ConsumerState<ShopScreen>
       });
     }
 
-    return Scaffold(
-      backgroundColor: AppColors.background,
-      body: SafeArea(
-        bottom: false,
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
+    return GestureDetector(
+      behavior: HitTestBehavior.opaque,
+      onTap: () => FocusScope.of(context).unfocus(),
+      child: Scaffold(
+        backgroundColor: AppColors.background,
+        body: SafeArea(
+          bottom: false,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
             // ── App bar ──────────────────────────────────────────────────
             _buildAppBar(),
             const SizedBox(height: 12),
@@ -239,6 +242,7 @@ class _ShopScreenState extends ConsumerState<ShopScreen>
                       backgroundColor: AppColors.surface,
                       child: GridView.builder(
                         controller: _scrollController,
+                        keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
                         padding: const EdgeInsets.fromLTRB(16, 0, 16, 120),
                         physics: const AlwaysScrollableScrollPhysics(
                           parent: BouncingScrollPhysics(),
@@ -268,6 +272,7 @@ class _ShopScreenState extends ConsumerState<ShopScreen>
             ),
           ],
         ),
+      ),
       ),
     );
   }

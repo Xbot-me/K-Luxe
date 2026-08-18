@@ -4,9 +4,11 @@ import 'package:flutter_application_1/core/utils/alert_service.dart';
 import 'package:flutter_application_1/shared/widgets/alert.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../product/models/product_model.dart';
-import '../../../shared/widgets/glass_container.dart';
 import '../../../core/cart/cart_manager.dart';
+import '../../../shared/widgets/glass_container.dart';
 import '../../product/repositories/product_repository.dart';
+import '../../../shared/widgets/app_cached_image.dart';
+import '../../../shared/widgets/app_action_button.dart';
 
 class QuickAddBottomSheet extends ConsumerStatefulWidget {
   final Product product; // minimal product from list (no options/variants)
@@ -141,14 +143,14 @@ class _QuickAddBottomSheetState extends ConsumerState<QuickAddBottomSheet> {
                   children: [
                     Row(
                       children: [
-                        ClipRRect(
+                        AppCachedImage(
+                          imageUrl: product.displayImageUrl,
+                          width: 80,
+                          height: 80,
+                          fit: BoxFit.cover,
                           borderRadius: BorderRadius.circular(12),
-                          child: Image.network(
-                            product.displayImageUrl,
-                            width: 80,
-                            height: 80,
-                            fit: BoxFit.cover,
-                          ),
+                          memCacheWidth: 200,
+                          memCacheHeight: 200,
                         ),
                         const SizedBox(width: 16),
                         Expanded(
@@ -275,54 +277,27 @@ class _QuickAddBottomSheetState extends ConsumerState<QuickAddBottomSheet> {
             ),
             Padding(
               padding: const EdgeInsets.symmetric(vertical: 20),
-              child: SizedBox(
-                width: double.infinity,
+              child: AppActionButton(
+                onPressed: (isOutOfStock || noVariantSelected)
+                    ? null
+                    : () async {
+                        final navigator = Navigator.of(context);
+                        await ref.read(cartProvider.notifier).addProduct(
+                          product,
+                          variantId: selectedVariant.id,
+                          selectedOptions: _selectedOptions,
+                        );
+                        if (mounted) {
+                          navigator.pop();
+                          AlertService.show(context, 'Added to cart');
+                        }
+                      },
+                enabled: !isOutOfStock && !noVariantSelected,
+                backgroundColor: AppColors.primary,
+                foregroundColor: AppColors.onPrimary,
+                label: isOutOfStock ? 'OUT OF STOCK' : 'ADD TO CART',
                 height: 56,
-                child: ElevatedButton(
-                  onPressed: (_isAdding || isOutOfStock || noVariantSelected)
-                      ? null
-                      : () async {
-                          final navigator = Navigator.of(context);
-                          //final messenger = ScaffoldMessenger.of(context);
-                          setState(() => _isAdding = true);
-                          await ref.read(cartProvider.notifier).addProduct(
-                            product,
-                            variantId: selectedVariant.id,
-                            selectedOptions: _selectedOptions,
-                          );
-                          if (mounted) {
-                            setState(() => _isAdding = false);
-                            navigator.pop();
-                            // Replace the SnackBar with this:
-                            AlertService.show(context, 'Added to cart');
-                          }
-                        },
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: AppColors.primary,
-                    foregroundColor: AppColors.onPrimary,
-                    elevation: 0,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(16),
-                    ),
-                    disabledBackgroundColor: Colors.white10,
-                  ),
-                  child: _isAdding
-                      ? const SizedBox(
-                          width: 24,
-                          height: 24,
-                          child: CircularProgressIndicator(
-                            strokeWidth: 2,
-                            color: Colors.white,
-                          ),
-                        )
-                      : Text(
-                          isOutOfStock ? 'OUT OF STOCK' : 'ADD TO CART',
-                          style: const TextStyle(
-                            letterSpacing: 1.2,
-                            fontWeight: FontWeight.w900,
-                          ),
-                        ),
-                ),
+                borderRadius: 16,
               ),
             ),
           ],

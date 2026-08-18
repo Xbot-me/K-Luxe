@@ -8,6 +8,8 @@ import 'package:flutter_animate/flutter_animate.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/cart/cart_manager.dart';
 import '../../shared/widgets/glass_container.dart';
+import '../../shared/widgets/app_cached_image.dart';
+import '../../shared/widgets/app_action_button.dart';
 
 class CartScreen extends ConsumerStatefulWidget {
   const CartScreen({super.key});
@@ -260,34 +262,12 @@ class _CartScreenState extends ConsumerState<CartScreen>
                         const SizedBox(height: 40),
 
                         // Checkout button
-                        GestureDetector(
-                          onTap: () => context.push('/checkout'),
-                          child: Container(
-                            width: double.infinity,
-                            padding: const EdgeInsets.symmetric(vertical: 20),
-                            decoration: BoxDecoration(
-                              gradient: AppColors.primaryGradient,
-                              borderRadius: BorderRadius.circular(16),
-                              boxShadow: [
-                                BoxShadow(
-                                  color: AppColors.primary.withValues(
-                                    alpha: 0.3,
-                                  ),
-                                  blurRadius: 20,
-                                ),
-                              ],
-                            ),
-                            child: const Center(
-                              child: Text(
-                                'CHECKOUT',
-                                style: TextStyle(
-                                  color: AppColors.onPrimary,
-                                  fontWeight: FontWeight.bold,
-                                  letterSpacing: 2.0,
-                                ),
-                              ),
-                            ),
-                          ).animate().shimmer(duration: 2.seconds),
+                        AppActionButton(
+                          onPressed: () async => context.push('/checkout'),
+                          label: 'CHECKOUT',
+                          icon: LucideIcons.creditCard,
+                          height: 56,
+                          borderRadius: 16,
                         ),
                       ],
                     ),
@@ -447,23 +427,14 @@ class _CartItemTile extends ConsumerWidget {
         ),
         child: Row(
           children: [
-            ClipRRect(
+            AppCachedImage(
+              imageUrl: item.product.featuredImage.url,
+              width: 100,
+              height: 100,
+              fit: BoxFit.cover,
               borderRadius: BorderRadius.circular(16),
-              child: Image.network(
-                item.product.featuredImage.url,
-                width: 100,
-                height: 100,
-                fit: BoxFit.cover,
-                errorBuilder: (_, __, ___) => Container(
-                  width: 100,
-                  height: 100,
-                  color: AppColors.surface,
-                  child: const Icon(
-                    LucideIcons.imageOff,
-                    color: AppColors.onSurfaceVariant,
-                  ),
-                ),
-              ),
+              memCacheWidth: 200,
+              memCacheHeight: 200,
             ),
             const SizedBox(width: 20),
             Expanded(

@@ -304,6 +304,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   ) {
     return SingleChildScrollView(
       physics: const BouncingScrollPhysics(),
+      keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
       padding: const EdgeInsets.only(bottom: 120),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -392,50 +393,55 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   }
 
   Widget _buildSearchResults() {
-    return SafeArea(
-      child: Column(
-        children: [
-          Padding(
-            padding: const EdgeInsets.fromLTRB(24, 8, 24, 0),
-            child: SharedSearchBar(
-              controller: _searchController,
-              onChanged: _onSearchChanged,
-              onFocus: (active) => setState(() => _searchActive = active),
-              autofocus: true,
-              padding: EdgeInsets.zero,
-              hintText: 'Search albums, merch, artists...',
+    return GestureDetector(
+      behavior: HitTestBehavior.opaque,
+      onTap: () => FocusScope.of(context).unfocus(),
+      child: SafeArea(
+        child: Column(
+          children: [
+            Padding(
+              padding: const EdgeInsets.fromLTRB(24, 8, 24, 0),
+              child: SharedSearchBar(
+                controller: _searchController,
+                onChanged: _onSearchChanged,
+                onFocus: (active) => setState(() => _searchActive = active),
+                autofocus: true,
+                padding: EdgeInsets.zero,
+                hintText: 'Search albums, merch, artists...',
+              ),
             ),
-          ),
-          const SizedBox(height: 12),
-          if (_searchLoading)
-            const Expanded(
-              child: Center(child: CircularProgressIndicator(color: AppColors.primary)),
-            )
-          else if (_searchResults.isEmpty && _searchController.text.trim().isNotEmpty)
-            Expanded(
-              child: Center(
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    const Icon(LucideIcons.searchX, size: 40, color: AppColors.onSurfaceVariant),
-                    const SizedBox(height: 12),
-                    Text(
-                      'No results for "${_searchController.text}"',
-                      style: const TextStyle(color: AppColors.onSurfaceVariant, fontSize: 14),
-                    ),
-                  ],
+            const SizedBox(height: 12),
+            if (_searchLoading)
+              const Expanded(
+                child: Center(child: CircularProgressIndicator(color: AppColors.primary)),
+              )
+            else if (_searchResults.isEmpty && _searchController.text.trim().isNotEmpty)
+              Expanded(
+                child: Center(
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      const Icon(LucideIcons.searchX, size: 40, color: AppColors.onSurfaceVariant),
+                      const SizedBox(height: 12),
+                      Text(
+                        'No results for "${_searchController.text}"',
+                        style: const TextStyle(color: AppColors.onSurfaceVariant, fontSize: 14),
+                      ),
+                    ],
+                  ),
+                ),
+              )
+            else
+              Expanded(
+                child: ListView.builder(
+                  keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
+                  padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 8),
+                  itemCount: _searchResults.length,
+                  itemBuilder: (_, i) => SearchResultTile(product: _searchResults[i]),
                 ),
               ),
-            )
-          else
-            Expanded(
-              child: ListView.builder(
-                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 8),
-                itemCount: _searchResults.length,
-                itemBuilder: (_, i) => SearchResultTile(product: _searchResults[i]),
-              ),
-            ),
-        ],
+          ],
+        ),
       ),
     );
   }
